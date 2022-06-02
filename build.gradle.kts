@@ -1,7 +1,6 @@
 plugins {
     kotlin("multiplatform") version "1.6.10"
     id("maven-publish")
-    id("com.android.library")
 }
 
 group = "com.jeantuffier"
@@ -25,9 +24,6 @@ publishing {
 kotlin {
     jvm()
 
-    android {
-        publishLibraryVariants("release", "debug")
-    }
     iosX64("ios") {
         binaries {
             framework {
@@ -35,6 +31,7 @@ kotlin {
             }
         }
     }
+
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -49,14 +46,6 @@ kotlin {
             }
         }
 
-        val androidMain by getting
-        val androidTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-                implementation("junit:junit:4.13.2")
-            }
-        }
-
         val iosMain by getting
         val iosTest by getting
 
@@ -66,25 +55,5 @@ kotlin {
                 implementation(kotlin("test"))
             }
         }
-    }
-}
-
-android {
-    compileSdkVersion(31)
-
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    sourceSets.getByName("main") {
-        manifest.srcFile("src/androidMain/AndroidManifest.xml")
-        java.srcDirs("src/androidMain/kotlin")
-        res.srcDirs("src/androidMain/res")
-    }
-    sourceSets.getByName("test") {
-        java.srcDirs("src/androidTest/kotlin")
-        res.srcDirs("src/androidTest/res")
-    }
-
-    defaultConfig {
-        minSdkVersion(24)
-        targetSdkVersion(31)
     }
 }
