@@ -24,7 +24,7 @@ publishing {
 kotlin {
     jvm()
 
-    iosX64("ios") {
+    ios {
         binaries {
             framework {
                 baseName = "SharedModels"
