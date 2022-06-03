@@ -35,7 +35,7 @@ fun interface Execute<State, Event> {
     suspend operator fun invoke(state: State, event: Event): State
 }
 
-internal class TransitionBuilder<State, Event>(
+class TransitionBuilder<State, Event>(
     private val predicate: IsExecutable<State>,
     private val execution: Execute<State, Event>
 ) : Transition<State, Event> {

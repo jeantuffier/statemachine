@@ -44,7 +44,7 @@ interface StateMachine<ViewState, Event> {
  * @param reducer: a function matching events with transition. The easiest way
  * to do so is by using a `when` statement.
  */
-internal class StateMachineBuilder<ViewState, Event>(
+class StateMachineBuilder<ViewState, Event>(
     initialValue: ViewState,
     private val reducer: suspend StateMachineBuilder<ViewState, Event>.(Event) -> Unit
 ) : StateMachine<ViewState, Event> {
