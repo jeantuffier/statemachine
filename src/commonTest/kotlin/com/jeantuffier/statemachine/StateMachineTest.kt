@@ -8,24 +8,32 @@ import kotlin.test.assertEquals
 
 sealed class Event {
     data class Event1(val value: Int) : Event()
+    data class Event2(val value: Int) : Event()
 }
 
 data class ViewState(val counter: Int = 0)
 
-class Transition1 : Transition<ViewState, Event.Event1> by TransitionBuilder(
-    predicate = { it.counter < 5 },
-    execution = { state, event ->
+val transition1 = Transition<ViewState, Event.Event1> { state, event ->
+    if (state.counter < 5) {
         state.copy(counter = state.counter + event.value)
-    }
-)
+    } else state
+}
+
+val transition2 = Transition<ViewState, Event.Event2> { state, event ->
+    if (state.counter < 20) {
+        state.copy(counter = state.counter * event.value)
+    } else state
+}
 
 class ViewStateMachine(
-    private val transition1: Transition1
+    private val transition1: Transition<ViewState, Event.Event1>,
+    private val transition2: Transition<ViewState, Event.Event2>,
 ) : StateMachine<ViewState, Event> by StateMachineBuilder(
     initialValue = ViewState(),
     reducer = {
         when (it) {
-            is Event.Event1 -> onEvent(transition1, it)
+            is Event.Event1 -> executeTransition(transition1, it)
+            is Event.Event2 -> executeTransition(transition2, it)
         }
     }
 )
@@ -37,7 +45,7 @@ class StateMachineTest {
 
     @BeforeTest
     fun setUp() {
-        stateMachine = ViewStateMachine(Transition1())
+        stateMachine = ViewStateMachine(transition1, transition2)
     }
 
     @Test

@@ -57,14 +57,17 @@ class StateMachineBuilder<ViewState, Event>(
     override suspend fun reduce(event: Event) = reducer(event)
 }
 
+fun interface Transition<ViewState, Event> {
+    suspend operator fun invoke(
+        state: ViewState,
+        event: Event
+    ): ViewState
+}
+
 /**
  * A helper function checking if a transition can be executed.
  */
-suspend fun <ViewState, Event, T : Event> StateMachineBuilder<ViewState, Event>.onEvent(
+suspend fun <ViewState, Event, T : Event> StateMachineBuilder<ViewState, Event>.executeTransition(
     transition: Transition<ViewState, T>,
     event: T,
-) {
-    if (transition.isExecutable(state.value)) {
-        _state.update { transition.execute(state.value, event) }
-    }
-}
+) = _state.update { transition(state.value, event) }
