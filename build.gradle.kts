@@ -1,10 +1,11 @@
 plugins {
     kotlin("multiplatform") version "1.6.10"
+    id("com.rickclephas.kmp.nativecoroutines") version "0.12.2"
     id("maven-publish")
 }
 
 group = "com.jeantuffier"
-version = "2.0.0"
+version = "2.0.1"
 
 repositories {
     google()
