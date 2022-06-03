@@ -5,7 +5,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.time.ExperimentalTime
 
 sealed class Event {
     data class Event1(val value: Int) : Event()
@@ -31,7 +30,6 @@ class ViewStateMachine(
     }
 )
 
-@ExperimentalTime
 @ExperimentalCoroutinesApi
 class StateMachineTest {
 
@@ -47,6 +45,22 @@ class StateMachineTest {
         stateMachine.state.test {
             assertEquals(ViewState(), awaitItem())
             cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun ensurePredicateIsRespected() = runBlockingTest {
+        stateMachine.state.test {
+            assertEquals(ViewState(), awaitItem())
+
+            stateMachine.reduce(Event.Event1(2))
+            assertEquals(2, awaitItem().counter)
+
+            stateMachine.reduce(Event.Event1(3))
+            assertEquals(5, awaitItem().counter)
+
+            // nothing should be emitted, if it does, the test should fail with "Unconsumed events found"
+            stateMachine.reduce(Event.Event1(2))
         }
     }
 }
