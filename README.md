@@ -6,7 +6,7 @@ StateMachine let you create and register transitions for a specific state object
 requires a predicate checking the current state of the machine to ensure it can be run.
 
 ## Gradle
-Inside `commonMain`
+For Kotlin multiplatform, inside `commonMain`
 ```
 implementation "com.jeantuffier:statemachine:$version"
 ```
