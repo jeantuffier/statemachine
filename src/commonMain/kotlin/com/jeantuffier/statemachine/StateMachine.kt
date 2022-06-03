@@ -60,7 +60,7 @@ class StateMachineBuilder<ViewState, Event>(
 /**
  * A helper function checking if a transition can be executed.
  */
-internal suspend fun <ViewState, Event, T : Event> StateMachineBuilder<ViewState, Event>.onEvent(
+suspend fun <ViewState, Event, T : Event> StateMachineBuilder<ViewState, Event>.onEvent(
     transition: Transition<ViewState, T>,
     event: T,
 ) {
