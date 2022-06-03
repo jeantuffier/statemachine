@@ -1,68 +1,82 @@
 # State Machine
 
-A state machine dsl for kotlin multi-platform project.
+A state machine framework for kotlin multi-platform project.
 
-StateMachine let you create and register transitions for a specific state object. Each transition requires a predicate checking the current state of the machine to ensure it's ran at the correct time.
+StateMachine let you create and register transitions for a specific state object. Each transition 
+requires a predicate checking the current state of the machine to ensure it can be run.
 
 ## Gradle
-
-Inside the `repositories` block from your `build.gradle` file : 
+Inside `commonMain`
 ```
-maven { url = uri("https://maven.pkg.jetbrains.space/no.beiningbogen/p/stmn/maven") }
+implementation "com.jeantuffier:statemachine:$version"
 ```
-Inside `dependencies`
+For the Jvm and Android
 ```
-implementation "no.no.beiningbogen:StateMachine:0.3.0"
+implementation "com.jeantuffier:statemachine-jvm:$version"
 ```
-
+For iOS
+```
+implementation "com.jeantuffier:statemachine-ios:$version"
+```
 ## Usage 
 
 ```
-**
- * Create and initialize a state machine with a builder lambda.
- */
-val stateMachine: StateMachine<CustomerScreenState, CustomerScreenEvents>
- = createStateMachine(initialState, dispatcher) {
-        /**
-         * Register a predefined transition.
-         */
-        register(loadCustomerTransition)
-    
-        /**
-         * Register an anonymous transition here
-         */
-        register {
-            transition<CustomerScreenState, CustomerScreenEvents.ShowLoading>(
-                predicate = { !it.isLoading },
-                execution = { it.value = it.value.copy(isLoading = true) }
-            )
-        }
-    
-        register {
-            transition<CustomerScreenState, CustomerScreenEvents.HideLoading>(
-                predicate = { it.isLoading },
-                execution = { it.value = it.value.copy(isLoading = false) }
-            )
+sealed class Event {
+    data class Event1(val value: Int) : Event()
+}
+
+data class ViewState(val counter: Int = 0)
+
+class Transition1 : Transition<ViewState, Event.Event1> by TransitionBuilder(
+    predicate = { it.counter < 5 },
+    execution = { state, event ->
+        state.copy(counter = state.counter + event.value)
+    }
+)
+
+class ViewStateMachine(
+    private val transition1: Transition1
+) : StateMachine<ViewState, Event> by StateMachineBuilder(
+    initialValue = ViewState(),
+    reducer = {
+        when (it) {
+            is Event.Event1 -> onEvent(transition1, it)
         }
     }
-...
-@Test
-fun shouldTransitionToCustomerLoadedState() = dispatcher.runBlockingTest {
-    val initialState = CustomerScreenState(isLoading = true)
-    stateMachine = createStateMachine(initialState, dispatcher, builder)
+)
 
-    stateMachine.state.test {
-        assertEquals(initialState, expectItem())
-        stateMachine.onEvent(CustomerScreenEvents.LoadCustomers)
+@ExperimentalCoroutinesApi
+class StateMachineTest {
 
-        val nextState = expectItem()
-        assertTrue(nextState.isLoading)
-        assertEquals(customers, nextState.customers)
-        assertNull(nextState.error)
+    private lateinit var stateMachine: StateMachine<ViewState, Event>
 
-        cancelAndIgnoreRemainingEvents()
+    @BeforeTest
+    fun setUp() {
+        stateMachine = ViewStateMachine(Transition1())
+    }
+
+    @Test
+    fun ensureInitialDataIsCorrect() = runBlockingTest {
+        stateMachine.state.test {
+            assertEquals(ViewState(), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun ensurePredicateIsRespected() = runBlockingTest {
+        stateMachine.state.test {
+            assertEquals(ViewState(), awaitItem())
+
+            stateMachine.reduce(Event.Event1(2))
+            assertEquals(2, awaitItem().counter)
+
+            stateMachine.reduce(Event.Event1(3))
+            assertEquals(5, awaitItem().counter)
+
+            // nothing should be emitted, if it does, the test should fail with "Unconsumed events found"
+            stateMachine.reduce(Event.Event1(2))
+        }
     }
 }
 ```
-
-More details in StateMachineTest.kt
