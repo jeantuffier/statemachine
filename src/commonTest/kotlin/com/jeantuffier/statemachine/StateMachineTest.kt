@@ -2,38 +2,47 @@ package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 sealed class Event {
     data class Event1(val value: Int) : Event()
-    data class Event2(val value: Int) : Event()
+    object Event2 : Event()
 }
 
-data class ViewState(val counter: Int = 0)
+data class ViewState(
+    val counter: Int = 0,
+    val remoteValue: AsyncData<String> = AsyncData(value = "")
+)
 
 val transition1 = Transition<ViewState, Event.Event1> { state, event ->
-    if (state.counter < 5) {
-        state.copy(counter = state.counter + event.value)
-    } else state
+    if (state.value.counter < 5) {
+        state.value = state.value.copy(counter = state.value.counter + event.value)
+    }
 }
 
-val transition2 = Transition<ViewState, Event.Event2> { state, event ->
-    if (state.counter < 20) {
-        state.copy(counter = state.counter * event.value)
-    } else state
+val transition2 = Transition<ViewState, Event.Event2> { state, status ->
+    state.value = state.value.copy(
+        remoteValue = state.value.remoteValue.copy(
+            status = AsyncDataStatus.LOADING,
+        )
+    )
+    state.value = state.value.copy(
+        remoteValue = state.value.remoteValue.copy(
+            status = AsyncDataStatus.LOADED,
+            value = "remote value",
+        )
+    )
 }
 
-class ViewStateMachine(
-    private val transition1: Transition<ViewState, Event.Event1>,
-    private val transition2: Transition<ViewState, Event.Event2>,
-) : StateMachine<ViewState, Event> by StateMachineBuilder(
+class ViewStateMachine : StateMachine<ViewState, Event> by StateMachineBuilder(
     initialValue = ViewState(),
-    reducer = {
-        when (it) {
-            is Event.Event1 -> executeTransition(transition1, it)
-            is Event.Event2 -> executeTransition(transition2, it)
+    reducer = { state, event ->
+        when (event) {
+            is Event.Event1 -> transition1(state, event)
+            is Event.Event2 -> transition2(state, event)
         }
     }
 )
@@ -45,7 +54,7 @@ class StateMachineTest {
 
     @BeforeTest
     fun setUp() {
-        stateMachine = ViewStateMachine(transition1, transition2)
+        stateMachine = ViewStateMachine()
     }
 
     @Test
@@ -57,8 +66,9 @@ class StateMachineTest {
     }
 
     @Test
-    fun ensurePredicateIsRespected() = runBlockingTest {
-        stateMachine.state.test {
+    fun immediateTransactionShouldSucceed() = runBlockingTest {
+        val flow: Flow<ViewState> = stateMachine.state
+        flow.test {
             assertEquals(ViewState(), awaitItem())
 
             stateMachine.reduce(Event.Event1(2))
@@ -69,6 +79,23 @@ class StateMachineTest {
 
             // nothing should be emitted, if it does, the test should fail with "Unconsumed events found"
             stateMachine.reduce(Event.Event1(2))
+            expectNoEvents()
+            cancel()
+        }
+    }
+
+    @Test
+    fun asyncTransitionShouldSucceed() = runBlockingTest {
+        val flow: Flow<ViewState> = stateMachine.state
+        flow.test {
+            assertEquals(ViewState(), awaitItem())
+
+            stateMachine.reduce(Event.Event2)
+            assertEquals(AsyncDataStatus.LOADING, awaitItem().remoteValue.status)
+
+            val next = awaitItem()
+            assertEquals(AsyncDataStatus.LOADED, next.remoteValue.status)
+            assertEquals("remote value", next.remoteValue.value)
         }
     }
 }

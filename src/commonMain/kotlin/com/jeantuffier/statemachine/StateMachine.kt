@@ -2,10 +2,7 @@ package com.jeantuffier.statemachine
 
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutineScope
 import kotlinx.coroutines.MainScope
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 
 /**
  * A [StateMachine] should be used to extract the business logic required in a client
@@ -30,7 +27,7 @@ interface StateMachine<ViewState, Event> {
      * Clients should call this function whenever an [Event] is triggered by a user.
      * @param event: The event triggered by the user.
      */
-    suspend fun reduce(event: Event)
+    suspend fun <T : Event> reduce(event: T)
 }
 
 /**
@@ -46,28 +43,21 @@ interface StateMachine<ViewState, Event> {
  */
 class StateMachineBuilder<ViewState, Event>(
     initialValue: ViewState,
-    private val reducer: suspend StateMachineBuilder<ViewState, Event>.(Event) -> Unit
+    private val reducer: suspend (MutableStateFlow<ViewState>, Event) -> Unit
 ) : StateMachine<ViewState, Event> {
     @NativeCoroutineScope
     internal val coroutineScope = MainScope()
 
-    internal val _state = MutableStateFlow(initialValue)
+    private val _state = MutableStateFlow(initialValue)
     override val state = _state.asStateFlow()
 
-    override suspend fun reduce(event: Event) = reducer(event)
+    override suspend fun <T : Event> reduce(event: T) = reducer(_state, event)
 }
+
 
 fun interface Transition<ViewState, Event> {
     suspend operator fun invoke(
-        state: ViewState,
-        event: Event
-    ): ViewState
+        state: MutableStateFlow<ViewState>,
+        event: Event,
+    )
 }
-
-/**
- * A helper function checking if a transition can be executed.
- */
-suspend fun <ViewState, Event, T : Event> StateMachineBuilder<ViewState, Event>.executeTransition(
-    transition: Transition<ViewState, T>,
-    event: T,
-) = _state.update { transition(state.value, event) }
