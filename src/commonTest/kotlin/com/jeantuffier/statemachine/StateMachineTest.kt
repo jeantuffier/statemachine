@@ -2,10 +2,10 @@ package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
-import kotlin.test.BeforeTest
-import kotlin.test.Test
-import kotlin.test.assertEquals
+import kotlin.native.concurrent.SharedImmutable
+import kotlin.test.*
 
 sealed class Event {
     data class Event1(val value: Int) : Event()
@@ -13,27 +13,25 @@ sealed class Event {
 }
 
 data class ViewState(
+    val isLoading: Boolean = false,
     val counter: Int = 0,
-    val remoteValue: AsyncData<String> = AsyncData(value = "")
+    val remoteValue: String = ""
 )
 
+@SharedImmutable
 val transition1 = Transition<ViewState, Event.Event1> { state, event ->
     if (state.value.counter < 5) {
         state.value = state.value.copy(counter = state.value.counter + event.value)
     }
 }
 
-val transition2 = Transition<ViewState, Event.Event2> { state, status ->
+@SharedImmutable
+val transition2 = Transition<ViewState, Event.Event2> { state, event ->
+    state.value = state.value.copy(isLoading = true)
+    delay(3000)
     state.value = state.value.copy(
-        remoteValue = state.value.remoteValue.copy(
-            status = AsyncDataStatus.LOADING,
-        )
-    )
-    state.value = state.value.copy(
-        remoteValue = state.value.remoteValue.copy(
-            status = AsyncDataStatus.LOADED,
-            value = "remote value",
-        )
+        isLoading = false,
+        remoteValue = "remote value"
     )
 }
 
@@ -66,7 +64,7 @@ class StateMachineTest {
     }
 
     @Test
-    fun immediateTransactionShouldSucceed() = runBlockingTest {
+    fun transaction1Succeed() = runBlockingTest {
         val flow: Flow<ViewState> = stateMachine.state
         flow.test {
             assertEquals(ViewState(), awaitItem())
@@ -85,17 +83,20 @@ class StateMachineTest {
     }
 
     @Test
-    fun asyncTransitionShouldSucceed() = runBlockingTest {
+    fun transaction2Succeed() = runBlockingTest {
         val flow: Flow<ViewState> = stateMachine.state
         flow.test {
             assertEquals(ViewState(), awaitItem())
 
             stateMachine.reduce(Event.Event2)
-            assertEquals(AsyncDataStatus.LOADING, awaitItem().remoteValue.status)
+            assertTrue(awaitItem().isLoading)
 
-            val next = awaitItem()
-            assertEquals(AsyncDataStatus.LOADED, next.remoteValue.status)
-            assertEquals("remote value", next.remoteValue.value)
+            val result = awaitItem()
+            assertFalse(result.isLoading)
+            assertEquals("remote value", result.remoteValue)
+
+            expectNoEvents()
+            cancel()
         }
     }
 }
