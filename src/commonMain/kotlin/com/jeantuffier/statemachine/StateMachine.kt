@@ -1,7 +1,5 @@
 package com.jeantuffier.statemachine
 
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutineScope
-import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.flow.*
 
 /**
@@ -45,8 +43,6 @@ class StateMachineBuilder<ViewState, Event>(
     initialValue: ViewState,
     private val reducer: suspend (MutableStateFlow<ViewState>, Event) -> Unit
 ) : StateMachine<ViewState, Event> {
-    @NativeCoroutineScope
-    internal val coroutineScope = MainScope()
 
     private val _state = MutableStateFlow(initialValue)
     override val state = _state.asStateFlow()
@@ -54,10 +50,16 @@ class StateMachineBuilder<ViewState, Event>(
     override suspend fun <T : Event> reduce(event: T) = reducer(_state, event)
 }
 
+interface ViewStateUpdater<Key> {
+    fun <T> currentValue(key: Key): T
+    fun updateValue(key: Key, newValue: Any)
 
-fun interface Transition<ViewState, Event> {
+    fun updateValues(values: Map<Key, Any>)
+}
+
+fun interface Transition<Event, Key> {
     suspend operator fun invoke(
-        state: MutableStateFlow<ViewState>,
+        updater: ViewStateUpdater<Key>,
         event: Event,
     )
 }
