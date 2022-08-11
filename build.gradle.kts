@@ -1,59 +1,9 @@
 plugins {
-    kotlin("multiplatform") version "1.7.10"
-    id("maven-publish")
+    kotlin("multiplatform") apply false
 }
 
-group = "com.jeantuffier"
-version = "2.1.0-alpha1"
-
-repositories {
-    google()
-    mavenCentral()
-}
-
-publishing {
+subprojects {
     repositories {
-        maven {
-            url = uri("https://maven.pkg.github.com/jeantuffier/statemachine")
-            name = "github"
-            credentials(PasswordCredentials::class)
-        }
-    }
-}
-
-kotlin {
-    jvm()
-
-    ios {
-        binaries {
-            framework {
-                baseName = "StateMachine"
-            }
-        }
-    }
-
-    sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-                implementation("app.cash.turbine:turbine:0.7.0")
-            }
-        }
-
-        val iosMain by getting
-        val iosTest by getting
-
-        val jvmMain by getting
-        val jvmTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
+        mavenCentral()
     }
 }
