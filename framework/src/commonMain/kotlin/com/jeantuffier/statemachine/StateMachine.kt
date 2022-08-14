@@ -57,7 +57,7 @@ interface ViewStateUpdater<Key> {
     fun updateValues(values: Map<Key, Any>)
 }
 
-fun interface Transition<Event, Key> {
+fun interface Transition<Key, Event> {
     suspend operator fun invoke(
         updater: ViewStateUpdater<Key>,
         event: Event,

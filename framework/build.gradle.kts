@@ -1,6 +1,5 @@
 plugins {
     kotlin("multiplatform")
-    id("com.google.devtools.ksp")
     id("maven-publish")
 }
 
@@ -38,33 +37,15 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.1-native-mt")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
             }
         }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-                implementation("app.cash.turbine:turbine:0.7.0")
-            }
-        }
+        val commonTest by getting
 
         val iosMain by getting
         val iosTest by getting
 
         val jvmMain by getting
-        val jvmTest by getting {
-            dependencies {
-                implementation(kotlin("test"))
-            }
-        }
+        val jvmTest by getting
     }
-}
-
-dependencies {
-    add("kspCommonMainMetadata", project(":processor"))
-    /*add("kspJvm", project(":processor"))
-    add("kspJvmTest", project(":processor"))
-    add("kspios", project(":processor"))
-    add("kspIosTest", project(":processor"))*/
 }
