@@ -14,5 +14,7 @@ pluginManagement {
 
 rootProject.name = "statemachine"
 
+include(":annotation")
+include(":example")
 include(":framework")
 include(":processor")
