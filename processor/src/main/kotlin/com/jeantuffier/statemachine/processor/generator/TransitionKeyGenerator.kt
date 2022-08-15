@@ -31,7 +31,7 @@ class TransitionKeyGenerator(
     }
 
     companion object {
-        const val PACKAGE_NAME = "com.jeantuffier.statemachine.generated"
+        const val PACKAGE_NAME = "com.jeantuffier.statemachine"
         const val ENUM_NAME = "TransitionKey"
     }
 }
