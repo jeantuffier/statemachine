@@ -10,8 +10,8 @@ import kotlin.test.assertEquals
 @ExperimentalCoroutinesApi
 class StateMachineTest {
 
-    private lateinit var stateMachine1: StateMachine<ViewState1, Event>
-    private lateinit var stateMachine2: StateMachine<ViewState2, Event>
+//    private lateinit var stateMachine1: StateMachine<ViewState1, Event>
+//    private lateinit var stateMachine2: StateMachine<ViewState2, Event>
 
     /*@BeforeTest
     fun setUp() {

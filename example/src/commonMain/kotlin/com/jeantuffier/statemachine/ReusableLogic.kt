@@ -16,14 +16,14 @@ sealed class AppEvent {
     }
 }
 
-@SharedImmutable
-val loadStudents = loadAsyncData<TransitionKey, List<Person>, AppEvent.LoadStudents>(
-    key = TransitionKey.STUDENTS,
-    loader = { event -> listOf(Person("student1", "student1"), Person("student2", "student2")) },
-)
-
-@SharedImmutable
-val loadTeachers = loadAsyncData<TransitionKey, List<Person>, AppEvent.LoadTeachers>(
-    key = TransitionKey.STUDENTS,
-    loader = { event -> listOf(Person("student1", "student1"), Person("student2", "student2")) },
-)
+//@SharedImmutable
+//val loadStudents = loadAsyncData<TransitionKey, List<Person>, AppEvent.LoadStudents>(
+//    key = TransitionKey.STUDENTS,
+//    loader = { event -> listOf(Person("student1", "student1"), Person("student2", "student2")) },
+//)
+//
+//@SharedImmutable
+//val loadTeachers = loadAsyncData<TransitionKey, List<Person>, AppEvent.LoadTeachers>(
+//    key = TransitionKey.STUDENTS,
+//    loader = { event -> listOf(Person("student1", "student1"), Person("student2", "student2")) },
+//)

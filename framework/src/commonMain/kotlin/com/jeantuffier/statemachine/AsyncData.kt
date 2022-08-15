@@ -8,21 +8,21 @@ data class AsyncData<T>(
 )
 
 // TODO - generate this
-fun <Key, AsyncDataType, LoadEvent> loadAsyncData(
-    key: Key,
-    loader: (LoadEvent) -> AsyncDataType,
-) = ReusableTransition { updater, event: LoadEvent ->
-    val currentValue = updater.currentValue(key) as AsyncData<AsyncDataType>
-    updater.updateValue(
-        key = key,
-        newValue = currentValue.copy(status = AsyncDataStatus.LOADING)
-    )
-    val data = loader(event)
-    updater.updateValue(
-        key = key,
-        newValue = AsyncData(
-            data = data,
-            status = AsyncDataStatus.SUCCESS
-        )
-    )
-}
+//fun <Key, AsyncDataType, LoadEvent> loadAsyncData(
+//    key: Key,
+//    loader: (LoadEvent) -> AsyncDataType,
+//) = ReusableTransition { updater, event: LoadEvent ->
+//    val currentValue = updater.currentValue(key) as AsyncData<AsyncDataType>
+//    updater.updateValue(
+//        key = key,
+//        newValue = currentValue.copy(status = AsyncDataStatus.LOADING)
+//    )
+//    val data = loader(event)
+//    updater.updateValue(
+//        key = key,
+//        newValue = AsyncData(
+//            data = data,
+//            status = AsyncDataStatus.SUCCESS
+//        )
+//    )
+//}
