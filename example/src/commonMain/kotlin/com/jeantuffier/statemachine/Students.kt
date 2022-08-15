@@ -9,7 +9,7 @@ import kotlin.native.concurrent.SharedImmutable
 data class StudentsViewState(
     val studentCount: Int,
 
-    @CrossStateProperty(key = "STUDENTS")
+    @CrossStateProperty(key = "students")
     val students: AsyncData<List<Person>> = AsyncData(emptyList()),
 )
 

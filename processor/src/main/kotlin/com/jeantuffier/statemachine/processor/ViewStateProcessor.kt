@@ -1,50 +1,68 @@
 package com.jeantuffier.statemachine.processor
 
-import com.google.devtools.ksp.processing.*
+import com.google.devtools.ksp.processing.CodeGenerator
+import com.google.devtools.ksp.processing.KSPLogger
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.validate
+import com.jeantuffier.statemachine.annotation.CrossStateProperty
 import com.jeantuffier.statemachine.annotation.ViewState
+import com.jeantuffier.statemachine.processor.generator.ReusableTransitionGenerator
 import com.jeantuffier.statemachine.processor.generator.TransitionKeyGenerator
-import com.jeantuffier.statemachine.processor.validator.SymbolValidator
+import com.jeantuffier.statemachine.processor.generator.ViewStateUpdaterGenerator
+import com.jeantuffier.statemachine.processor.validator.CrossStatePropertyValidator
+import com.jeantuffier.statemachine.processor.validator.ViewStateValidator
 import com.jeantuffier.statemachine.processor.visitor.TransitionKeyVisitor
 import com.jeantuffier.statemachine.processor.visitor.ViewStateVisitor
 
 class ViewStateProcessor(
-    private val codeGenerator: CodeGenerator,
+    codeGenerator: CodeGenerator,
     private val logger: KSPLogger,
 ) : SymbolProcessor {
 
+    private val viewStateValidator = ViewStateValidator(logger)
+    private val crossStatePropertyValidator = CrossStatePropertyValidator(logger)
 
-    private var keysPackageName = ""
-
-    private val validator = SymbolValidator(logger)
+    private val transitionKeyGenerator = TransitionKeyGenerator(logger, codeGenerator)
     private val transitionKeyVisitor = TransitionKeyVisitor(logger)
-    private val viewStateVisitor = ViewStateVisitor(codeGenerator)
+
+    private val viewUpdaterGenerator = ViewStateUpdaterGenerator(logger, codeGenerator)
+    private val viewStateVisitor = ViewStateVisitor(viewUpdaterGenerator)
+
+    private val reusableTransitionGenerator = ReusableTransitionGenerator(codeGenerator)
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         var unresolvedSymbols: List<KSAnnotated> = emptyList()
-        val annotationName = ViewState::class.qualifiedName
+        val crossStatePropertyAnnotationName = CrossStateProperty::class.qualifiedName
+        val viewStateAnnotationName = ViewState::class.qualifiedName
 
-        if (annotationName != null) {
-            val resolved = resolver.symbolsWithAnnotations(annotationName)
-            val validatedSymbols = resolved.validatedSymbols(validator)
+        if (viewStateAnnotationName != null && crossStatePropertyAnnotationName != null) {
+            val resolvedCrossStatePropertyAnnotations =
+                resolver.symbolsWithAnnotations(crossStatePropertyAnnotationName)
+            val resolvedViewStateAnnotations = resolver.symbolsWithAnnotations(viewStateAnnotationName)
 
-            val transitionKeyClass = resolver.getNewFiles()
-                .toList()
-                .firstOrNull { it.fileName == "TransitionKey.kt" }
+            val validatedCrossStatePropertySymbols =
+                resolvedCrossStatePropertyAnnotations.filter { crossStatePropertyValidator.isValid(it) }
+            val validatedViewStateSymbols = resolvedViewStateAnnotations.filter { viewStateValidator.isValid(it) }
 
-            logger.info("TransitionKey exists: ${transitionKeyClass != null}")
-
-            unresolvedSymbols = if (transitionKeyClass == null) {
+            unresolvedSymbols = if (!resolver.checkFileExists("TransitionKey.kt")) {
                 logger.info("Generating TransitionKey")
-                generateKeys(validatedSymbols, transitionKeyVisitor, codeGenerator)
-                resolved
+                generateKeys(logger, validatedCrossStatePropertySymbols, transitionKeyVisitor, transitionKeyGenerator)
+                resolvedViewStateAnnotations
+            } else if (!resolver.checkFileExists("ViewStateUpdater.kt")) {
+                logger.info("Generating ViewStateUpdater")
+                viewUpdaterGenerator.generateInterface()
+                resolvedViewStateAnnotations
+            } else if (!resolver.checkFileExists("ReusableTransition.kt")) {
+                logger.info("Generating ReusableTransition")
+                reusableTransitionGenerator.generateInterface()
+                resolvedViewStateAnnotations
             } else {
                 logger.info("Generating ViewStateUpdaters")
-                validatedSymbols
+                resolvedViewStateAnnotations
                     .forEach { it.accept(viewStateVisitor, Unit) }
-                resolved - validatedSymbols.toSet()
+                resolvedViewStateAnnotations - validatedViewStateSymbols.toSet()
             }
         }
         return unresolvedSymbols
@@ -55,20 +73,24 @@ private fun Resolver.symbolsWithAnnotations(annotationName: String) =
     getSymbolsWithAnnotation(annotationName)
         .toList()
 
-private fun List<KSAnnotated>.validatedSymbols(validator: SymbolValidator) =
-    filter { it.validate() }
-        .filter { validator.isValid(it) }
+private fun Resolver.checkFileExists(name: String) =
+    getAllFiles()
+        .toList()
+        .firstOrNull { it.fileName == name } != null
 
 private fun generateKeys(
+    logger: KSPLogger,
     validatedSymbols: List<KSAnnotated>,
     transitionKeyVisitor: TransitionKeyVisitor,
-    codeGenerator: CodeGenerator,
+    transitionKeyGenerator: TransitionKeyGenerator,
 ) {
+    val names = validatedSymbols.joinToString(",") { it.toString() }
+    logger.info("Validated symbols for TransitionKey: $names")
     validatedSymbols
         .forEachIndexed { index, validSymbol ->
             validSymbol.accept(transitionKeyVisitor, Unit)
             if (index == validatedSymbols.lastIndex) {
-                TransitionKeyGenerator(codeGenerator).generateTransitionKeys(transitionKeyVisitor.properties)
+                transitionKeyGenerator.generateTransitionKeys(transitionKeyVisitor.properties)
             }
         }
 }

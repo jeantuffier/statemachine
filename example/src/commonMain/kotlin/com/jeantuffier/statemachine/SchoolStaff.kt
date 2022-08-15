@@ -7,7 +7,7 @@ import com.jeantuffier.statemachine.annotation.ViewState
 data class SchoolStaffViewState(
     val staffCount: Int,
 
-    @CrossStateProperty(key = "TEACHERS")
+    @CrossStateProperty(key = "teachers")
     val teachers: AsyncData<List<Person>> = AsyncData(emptyList()),
 
     val adminEmployees: AsyncData<List<Person>> = AsyncData(emptyList()),
