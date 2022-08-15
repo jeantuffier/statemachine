@@ -19,7 +19,7 @@ class ViewStateProcessor(
     private var keysPackageName = ""
 
     private val validator = SymbolValidator(logger)
-    private val transitionKeyVisitor = TransitionKeyVisitor()
+    private val transitionKeyVisitor = TransitionKeyVisitor(logger)
     private val viewStateVisitor = ViewStateVisitor(codeGenerator)
 
     override fun process(resolver: Resolver): List<KSAnnotated> {

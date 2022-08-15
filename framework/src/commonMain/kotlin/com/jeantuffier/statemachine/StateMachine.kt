@@ -50,16 +50,10 @@ class StateMachineBuilder<ViewState, Event>(
     override suspend fun <T : Event> reduce(event: T) = reducer(_state, event)
 }
 
+// TODO - generate this
 interface ViewStateUpdater<Key> {
     fun <T> currentValue(key: Key): T
     fun updateValue(key: Key, newValue: Any)
 
     fun updateValues(values: Map<Key, Any>)
-}
-
-fun interface Transition<Key, Event> {
-    suspend operator fun invoke(
-        updater: ViewStateUpdater<Key>,
-        event: Event,
-    )
 }
