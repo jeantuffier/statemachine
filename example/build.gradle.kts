@@ -31,6 +31,7 @@ kotlin {
                 implementation(project(":framework"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
             }
+            kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }
         val commonTest by getting {
             dependencies {
@@ -40,6 +41,7 @@ kotlin {
                 implementation("app.cash.turbine:turbine:0.7.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
             }
+            kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }
 
         val iosMain by getting

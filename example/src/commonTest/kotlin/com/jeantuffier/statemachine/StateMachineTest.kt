@@ -10,46 +10,43 @@ import kotlin.test.assertEquals
 @ExperimentalCoroutinesApi
 class StateMachineTest {
 
-//    private lateinit var stateMachine1: StateMachine<ViewState1, Event>
-//    private lateinit var stateMachine2: StateMachine<ViewState2, Event>
+    private lateinit var schoolStateMachine: SchoolStateMachine
 
-    /*@BeforeTest
+    @BeforeTest
     fun setUp() {
-        stateMachine1 = ViewStateMachine1()
-        stateMachine2 = ViewStateMachine2()
+        schoolStateMachine = SchoolStateMachine()
     }
 
     @Test
-    fun ensureInitialDataIsCorrect1() = runBlockingTest {
-        stateMachine1.state.test {
-            assertEquals(ViewState1(), awaitItem())
+    fun ensureInitialDataIsCorrect() = runBlockingTest {
+        schoolStateMachine.state.test {
+            assertEquals(SchoolViewState(), awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun ensureInitialDataIsCorrect2() = runBlockingTest {
-        stateMachine2.state.test {
-            assertEquals(ViewState2(), awaitItem())
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun isLoading1() = runBlockingTest {
-        val flow: Flow<ViewState1> = stateMachine1.state
+    fun isLoading() = runBlockingTest {
+        val flow: Flow<SchoolViewState> = schoolStateMachine.state
         flow.test {
-            assertEquals(ViewState1(), awaitItem())
+            assertEquals(SchoolViewState(), awaitItem())
 
-            stateMachine1.reduce(Event.IsLoading(true))
-            assertEquals(true, awaitItem().isLoading)
+            schoolStateMachine.reduce(AppEvent.LoadStudents(0, 20))
+            assertEquals(AsyncDataStatus.LOADING, awaitItem().students.status)
 
-            stateMachine1.reduce(Event.IsLoading(false))
-            assertEquals(false, awaitItem().isLoading)
+            val next = awaitItem()
+            assertEquals(AsyncDataStatus.SUCCESS, next.students.status)
+            assertEquals(
+                listOf(
+                    Person("student1", "student1"),
+                    Person("student2", "student2")
+                ),
+                next.students.data,
+            )
         }
     }
 
-    @Test
+    /*@Test
     fun isLoading2() = runBlockingTest {
         val flow: Flow<ViewState2> = stateMachine2.state
         flow.test {

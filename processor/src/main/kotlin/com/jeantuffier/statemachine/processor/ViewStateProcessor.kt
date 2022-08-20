@@ -8,6 +8,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.validate
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
 import com.jeantuffier.statemachine.annotation.ViewState
+import com.jeantuffier.statemachine.processor.generator.AsyncDataGenerator
 import com.jeantuffier.statemachine.processor.generator.ReusableTransitionGenerator
 import com.jeantuffier.statemachine.processor.generator.TransitionKeyGenerator
 import com.jeantuffier.statemachine.processor.generator.ViewStateUpdaterGenerator
@@ -31,6 +32,7 @@ class ViewStateProcessor(
     private val viewStateVisitor = ViewStateVisitor(viewUpdaterGenerator)
 
     private val reusableTransitionGenerator = ReusableTransitionGenerator(codeGenerator)
+    private val asyncDataGenerator = AsyncDataGenerator(logger, codeGenerator)
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         var unresolvedSymbols: List<KSAnnotated> = emptyList()
@@ -57,6 +59,10 @@ class ViewStateProcessor(
             } else if (!resolver.checkFileExists("ReusableTransition.kt")) {
                 logger.info("Generating ReusableTransition")
                 reusableTransitionGenerator.generateInterface()
+                resolvedViewStateAnnotations
+            } else if (!resolver.checkFileExists("LoadAsyncData.kt")) {
+                logger.info("Generating LoadAsyncData")
+                asyncDataGenerator.generateLoadDataFunction()
                 resolvedViewStateAnnotations
             } else {
                 logger.info("Generating ViewStateUpdaters")

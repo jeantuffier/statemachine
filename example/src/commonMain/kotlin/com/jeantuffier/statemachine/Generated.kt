@@ -3,6 +3,7 @@ package com.jeantuffier.statemachine
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
+
 //enum class TransitionKey { STUDENTS, TEACHERS }
 
 //class SchoolViewStateUpdater(
