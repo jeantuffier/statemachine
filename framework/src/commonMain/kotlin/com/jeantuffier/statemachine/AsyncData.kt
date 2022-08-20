@@ -7,6 +7,8 @@ data class AsyncData<T>(
     val status: AsyncDataStatus = AsyncDataStatus.INITIAL,
 )
 
+fun <T> AsyncData<T>.status(newStatus: AsyncDataStatus) = copy(status = newStatus)
+
 // TODO - generate this
 //fun <Key, AsyncDataType, LoadEvent> loadAsyncData(
 //    key: Key,

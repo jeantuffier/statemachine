@@ -35,8 +35,8 @@ class ViewStateUpdaterGenerator(
                     .addFunction(
                         FunSpec.builder("currentValue")
                             .addModifiers(KModifier.ABSTRACT)
-                            .addTypeVariable(TypeVariableName.Companion.invoke("T"))
-                            .returns(TypeVariableName.invoke("T"))
+                            .addTypeVariable(TypeVariableName("T"))
+                            .returns(TypeVariableName("T"))
                             .addParameter("key", transitionKeyClass)
                             .build()
                     )
@@ -128,9 +128,9 @@ private fun KSAnnotation.checkName(name: String?): Boolean =
 private fun currentValue(crossProperties: List<String>): FunSpec {
     val builder = FunSpec.builder("currentValue")
         .addModifiers(KModifier.OVERRIDE)
-        .addTypeVariable(TypeVariableName.Companion.invoke("T"))
+        .addTypeVariable(TypeVariableName("T"))
         .addParameter("key", TransitionKeyGenerator.className)
-        .returns(TypeVariableName.invoke("T"))
+        .returns(TypeVariableName("T"))
         .beginControlFlow("return when (key)")
 
     crossProperties.forEach {

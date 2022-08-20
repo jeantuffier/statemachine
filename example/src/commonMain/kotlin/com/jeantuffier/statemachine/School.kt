@@ -12,13 +12,14 @@ data class SchoolViewState(
     val students: AsyncData<List<Person>> = AsyncData(emptyList()),
 )
 
-//class SchoolStateMachine : StateMachine<SchoolViewState, AppEvent> by StateMachineBuilder(
-//    initialValue = SchoolViewState(),
-//    reducer = { state, event ->
-//        val updater = SchoolViewStateUpdater(state)
-//        when (event) {
-//            is AppEvent.LoadStudents -> loadStudents(updater, event)
-//            is AppEvent.LoadTeachers -> loadTeachers(updater, event)
-//        }
-//    }
-//)
+class SchoolStateMachine : StateMachine<SchoolViewState, AppEvent> by StateMachineBuilder(
+    initialValue = SchoolViewState(),
+    reducer = { state, event ->
+        val updater = SchoolViewStateUpdater(state)
+        when (event) {
+            is AppEvent.LoadStudents -> loadStudents(updater, event)
+            is AppEvent.LoadTeachers -> loadTeachers(updater, event)
+            else -> {}
+        }
+    }
+)

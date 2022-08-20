@@ -7,10 +7,22 @@ import kotlin.native.concurrent.SharedImmutable
 
 @ViewState
 data class StudentsViewState(
-    val studentCount: Int,
+    val studentCount: Int = 0,
 
     @CrossStateProperty(key = "students")
     val students: AsyncData<List<Person>> = AsyncData(emptyList()),
+)
+
+class StudentsStateMachine : StateMachine<StudentsViewState, AppEvent> by StateMachineBuilder(
+    initialValue = StudentsViewState(),
+    reducer = { state, event ->
+        val updater = StudentsViewStateUpdater(state)
+        when (event) {
+            is AppEvent.StudentsEvent.LoadCount -> loadStudentCount(state, event)
+            is AppEvent.LoadTeachers -> loadTeachers(updater, event)
+            else -> {}
+        }
+    }
 )
 
 @SharedImmutable
