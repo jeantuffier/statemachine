@@ -31,7 +31,7 @@ class StateMachineTest {
         flow.test {
             assertEquals(SchoolViewState(), awaitItem())
 
-            schoolStateMachine.reduce(AppEvent.LoadStudents(0, 20))
+            schoolStateMachine.reduce(SchoolViewEvents.LoadStudents(0, 20))
             assertEquals(AsyncDataStatus.LOADING, awaitItem().students.status)
 
             val next = awaitItem()

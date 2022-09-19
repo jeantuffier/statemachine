@@ -1,6 +1,7 @@
 package com.jeantuffier.statemachine
 
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
+import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.update
@@ -15,26 +16,39 @@ data class SchoolStaffViewState(
     val adminEmployees: AsyncData<List<Person>> = AsyncData(emptyList()),
 )
 
-class SchoolStaffStateMachine : StateMachine<SchoolStaffViewState, AppEvent> by StateMachineBuilder(
+object LoadStaffCount
+
+data class LoadAdminEmployees(val offset: Int, val limit: Int)
+
+@ViewEventsBuilder(
+    crossViewEvents = [
+        LoadTeachers::class,
+        LoadStaffCount::class,
+        LoadAdminEmployees::class,
+    ]
+)
+class SchoolStaffViewEventsBuilder
+
+class SchoolStaffStateMachine : StateMachine<SchoolStaffViewState, SchoolStaffViewEvents> by StateMachineBuilder(
     initialValue = SchoolStaffViewState(),
     reducer = { state, event ->
         val updater = SchoolStaffViewStateUpdater(state)
         when (event) {
-            is AppEvent.SchoolStaffEvent.LoadStaffCount -> loadStaffCount()
-            is AppEvent.LoadTeachers -> loadTeachers(updater, event)
-            is AppEvent.SchoolStaffEvent.LoadAdminEmployees -> loadAdminEmployees()
+            is SchoolStaffViewEvents.LoadStaffCount -> loadStaffCount()
+            is SchoolStaffViewEvents.LoadTeachers -> loadTeachers(updater, event as LoadTeachers)
+            is SchoolStaffViewEvents.LoadAdminEmployees -> loadAdminEmployees()
             else -> {}
         }
     }
 )
 
 private fun loadStaffCount() =
-    ViewStateTransition<SchoolStaffViewState, AppEvent.SchoolStaffEvent.LoadStaffCount> { state, event ->
+    ViewStateTransition<SchoolStaffViewState, SchoolStaffViewEvents.LoadStaffCount> { state, event ->
         state.update { it.copy(staffCount = 100) }
     }
 
 private fun loadAdminEmployees() =
-    ViewStateTransition<SchoolStaffViewState, AppEvent.SchoolStaffEvent.LoadAdminEmployees> { state, event ->
+    ViewStateTransition<SchoolStaffViewState, SchoolStaffViewEvents.LoadAdminEmployees> { state, event ->
         val employees = state.value.adminEmployees
         state.update { it.copy(adminEmployees = employees.status(AsyncDataStatus.LOADING)) }
         delay(300)

@@ -1,29 +1,23 @@
 package com.jeantuffier.statemachine
 
+import com.jeantuffier.statemachine.annotation.CrossViewEvent
+import com.jeantuffier.statemachine.loadAsyncData
 import kotlin.native.concurrent.SharedImmutable
 
-sealed class AppEvent {
-    data class LoadStudents(val offset: Int, val limit: Int) : AppEvent()
-    data class LoadTeachers(val offset: Int, val limit: Int) : AppEvent()
+@CrossViewEvent
+data class LoadStudents(val offset: Int, val limit: Int)
 
-    sealed class StudentsEvent: AppEvent() {
-        object LoadCount : StudentsEvent()
-    }
-
-    sealed class SchoolStaffEvent: AppEvent() {
-        object LoadStaffCount : SchoolStaffEvent()
-        data class LoadAdminEmployees(val offset: Int, val limit: Int) : SchoolStaffEvent()
-    }
-}
+@CrossViewEvent
+data class LoadTeachers(val offset: Int, val limit: Int)
 
 @SharedImmutable
-val loadStudents = loadAsyncData<List<Person>, AppEvent.LoadStudents>(
+val loadStudents = loadAsyncData<List<Person>, LoadStudents>(
     key = TransitionKey.students,
     loader = { event -> listOf(Person("student1", "student1"), Person("student2", "student2")) },
 )
 
 @SharedImmutable
-val loadTeachers = loadAsyncData<List<Person>, AppEvent.LoadTeachers>(
+val loadTeachers = loadAsyncData<List<Person>, LoadTeachers>(
     key = TransitionKey.teachers,
     loader = { event -> listOf(Person("teacher1", "teacher1"), Person("teacher2", "teacher2")) },
 )
