@@ -25,6 +25,10 @@ kotlin {
     }
 
     sourceSets {
+        configureEach {
+            kotlin.srcDir("$buildDir/generated/ksp/$name/kotlin/")
+        }
+
         val commonMain by getting {
             dependencies {
                 implementation(project(":annotation"))
