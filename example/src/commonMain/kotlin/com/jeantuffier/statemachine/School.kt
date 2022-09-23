@@ -15,8 +15,8 @@ data class SchoolViewState(
 
 @ViewEventsBuilder(
     crossViewEvents = [
-        LoadStudents::class,
-        LoadTeachers::class,
+        LoadStudentsInterface::class,
+        LoadTeachersInterface::class,
     ]
 )
 class SchoolViewEventsBuilder
@@ -26,8 +26,8 @@ class SchoolStateMachine : StateMachine<SchoolViewState, SchoolViewEvents> by St
     reducer = { state, event ->
         val updater = SchoolViewStateUpdater(state)
         when (event) {
-            is SchoolViewEvents.LoadStudents -> loadStudents(updater, event as LoadStudents)
-            is SchoolViewEvents.LoadTeachers -> loadTeachers(updater, event as LoadTeachers)
+            is SchoolViewEvents.LoadStudents -> loadStudents(updater, event)
+            is SchoolViewEvents.LoadTeachers -> loadTeachers(updater, event)
         }
     }
 )

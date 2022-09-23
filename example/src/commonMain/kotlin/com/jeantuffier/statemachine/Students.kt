@@ -18,7 +18,7 @@ object LoadStudentCount
 
 @ViewEventsBuilder(
     crossViewEvents = [
-        LoadStudents::class,
+        LoadStudentsInterface::class,
         LoadStudentCount::class,
     ]
 )
@@ -30,7 +30,7 @@ class StudentsStateMachine : StateMachine<StudentsViewState, StudentsViewEvents>
         val updater = StudentsViewStateUpdater(state)
         when (event) {
             is StudentsViewEvents.LoadStudentCount -> loadStudentCount(state, event)
-            is StudentsViewEvents.LoadStudents -> loadStudents(updater, event as LoadStudents)
+            is StudentsViewEvents.LoadStudents -> loadStudents(updater, event)
         }
     }
 )

@@ -24,10 +24,15 @@ kotlin {
         }
     }
 
+
+    sourceSets.commonMain {
+        kotlin.srcDir("build/generated/ksp/main/kotlin")
+    }
+    sourceSets.commonTest {
+        kotlin.srcDir("build/generated/ksp/test/kotlin")
+    }
+
     sourceSets {
-        configureEach {
-            kotlin.srcDir("$buildDir/generated/ksp/$name/kotlin/")
-        }
 
         val commonMain by getting {
             dependencies {
