@@ -22,7 +22,7 @@ data class LoadAdminEmployees(val offset: Int, val limit: Int)
 
 @ViewEventsBuilder(
     crossViewEvents = [
-        LoadTeachers::class,
+        LoadTeachersInterface::class,
         LoadStaffCount::class,
         LoadAdminEmployees::class,
     ]
@@ -35,7 +35,7 @@ class SchoolStaffStateMachine : StateMachine<SchoolStaffViewState, SchoolStaffVi
         val updater = SchoolStaffViewStateUpdater(state)
         when (event) {
             is SchoolStaffViewEvents.LoadStaffCount -> loadStaffCount()
-            is SchoolStaffViewEvents.LoadTeachers -> loadTeachers(updater, event as LoadTeachers)
+            is SchoolStaffViewEvents.LoadTeachers -> loadTeachers(updater, event)
             is SchoolStaffViewEvents.LoadAdminEmployees -> loadAdminEmployees()
             else -> {}
         }
