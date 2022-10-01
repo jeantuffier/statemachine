@@ -1,4 +1,4 @@
-package com.jeantuffier.statemachine
+package com.jeantuffier.statemachine.framework
 
 import kotlinx.coroutines.flow.*
 

@@ -1,7 +1,7 @@
 package com.jeantuffier.statemachine.processor.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
-import com.jeantuffier.statemachine.Transition
+import com.jeantuffier.statemachine.framework.Transition
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.writeTo
 
@@ -15,7 +15,7 @@ class ReusableTransitionGenerator(
             fileName = INTERFACE_NAME,
         ).apply {
             addImport(TransitionKeyGenerator.PACKAGE_NAME, TransitionKeyGenerator.ENUM_NAME)
-            addImport("com.jeantuffier.statemachine", "Transition")
+            addImport("com.jeantuffier.statemachine.framework", "Transition")
             addType(
                 TypeSpec.funInterfaceBuilder("ReusableTransition")
                     .addTypeVariable(TypeVariableName("Event"))
