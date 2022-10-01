@@ -3,6 +3,10 @@ package com.jeantuffier.statemachine
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
 import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
+import com.jeantuffier.statemachine.framework.AsyncData
+import com.jeantuffier.statemachine.framework.StateMachine
+import com.jeantuffier.statemachine.framework.StateMachineBuilder
+import com.jeantuffier.statemachine.framework.ViewStateTransition
 import kotlinx.coroutines.flow.update
 import kotlin.native.concurrent.SharedImmutable
 

@@ -1,6 +1,7 @@
 package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
+import com.jeantuffier.statemachine.framework.AsyncDataStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlin.test.BeforeTest

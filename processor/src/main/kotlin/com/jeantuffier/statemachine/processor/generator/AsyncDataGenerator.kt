@@ -1,12 +1,12 @@
 package com.jeantuffier.statemachine.processor.generator
 
-import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
-import com.google.devtools.ksp.processing.Resolver
-import com.jeantuffier.statemachine.Transition
-import com.squareup.kotlinpoet.*
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.ksp.writeTo
 
 class AsyncDataGenerator(
@@ -21,7 +21,9 @@ class AsyncDataGenerator(
         ).apply {
             addImport(ReusableTransitionGenerator.PACKAGE_NAME, ReusableTransitionGenerator.INTERFACE_NAME)
             addImport(TransitionKeyGenerator.PACKAGE_NAME, TransitionKeyGenerator.ENUM_NAME)
-            addImport("com.jeantuffier.statemachine", "Transition")
+            addImport("com.jeantuffier.statemachine.framework", "Transition")
+            addImport("com.jeantuffier.statemachine.framework", "AsyncData")
+            addImport("com.jeantuffier.statemachine.framework", "AsyncDataStatus")
             val loadEvent = TypeVariableName("LoadEvent")
             val asyncDataType = TypeVariableName("AsyncDataType")
             val loader = LambdaTypeName.get(
@@ -54,25 +56,6 @@ class AsyncDataGenerator(
                         |)
                         |}
                         |""".trimMargin()
-//                        CodeBlock.builder()
-//                            .add(
-//                                """
-//                        |val currentValue = %1L.currentValue(key) as AsyncData<AsyncDataType>
-//                        |%1L.updateValue(
-//                        |key = key,
-//                        |newValue = currentValue.copy(status = AsyncDataStatus.LOADING)
-//                        |)
-//                        |val data = loader(%2L)
-//                        |%1L.updateValue(
-//                        |key = key,
-//                        |newValue = AsyncData(
-//                        |data = data,
-//                        |status = AsyncDataStatus.SUCCESS
-//                        |)
-//                        |)
-//                        |""".trimMargin()
-//                            )
-//                            .build()
                     )
                     .build()
             )
