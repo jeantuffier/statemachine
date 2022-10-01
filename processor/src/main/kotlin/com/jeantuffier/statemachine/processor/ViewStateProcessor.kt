@@ -72,14 +72,20 @@ private fun generateViewEvents(
     val annotations = resolver.symbolsWithAnnotations(annotationName)
     val symbols = annotations.filter { ViewEventBuilderValidator(logger).isValid(it) }
 
-    val exists = symbols.all {
-        val name = (it as KSClassDeclaration).simpleName
-        resolver.checkFileExists("${name}ViewEvent.kt")
-    }
+    val exists = symbols.all { viewEventFileExists(it, resolver, logger) }
     if (!exists) {
         val viewEventVisitor = ViewEventVisitor(logger, resolver, ViewEventGenerator(logger, codeGenerator))
         annotations.forEach { it.accept(viewEventVisitor, Unit) }
     }
+}
+
+private fun viewEventFileExists(
+    annotated: KSAnnotated,
+    resolver: Resolver,
+    logger: KSPLogger,
+): Boolean {
+    val name = (annotated as KSClassDeclaration).simpleName
+    return resolver.checkFileExists("${name}ViewEvent.kt")
 }
 
 private fun generateViewUpdaterInterface(

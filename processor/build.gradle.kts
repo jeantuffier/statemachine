@@ -3,13 +3,32 @@ val kspVersion: String by project
 
 plugins {
     kotlin("multiplatform")
+    id("maven-publish")
 }
 
-group = "com.jeantuffier"
-version = "0.1.0-SNAPSHOT"
+group = "com.jeantuffier.statemachine"
+version = "2.1.0-alpha1"
+
+repositories {
+    google()
+    mavenCentral()
+}
+
+publishing {
+    repositories {
+        maven {
+            url = uri("https://maven.pkg.github.com/jeantuffier/statemachine")
+            name = "github"
+            credentials(PasswordCredentials::class)
+        }
+    }
+}
 
 kotlin {
-    jvm()
+    jvm {
+        withJava()
+    }
+
     sourceSets {
         val jvmMain by getting {
             dependencies {
