@@ -3,7 +3,7 @@ package com.jeantuffier.statemachine
 enum class AsyncDataStatus { INITIAL, LOADING, SUCCESS, ERROR }
 
 data class AsyncData<T>(
-    val data: T?,
+    val data: T? = null,
     val status: AsyncDataStatus = AsyncDataStatus.INITIAL,
 )
 
