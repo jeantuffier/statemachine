@@ -21,7 +21,7 @@ class ViewEventGenerator(
         packageName: String,
         resolver: Resolver,
     ) {
-        val viewEventsClassName = builderClass.simpleName.asString().replace("ViewEventsBuilder", "ViewEvents")
+        val viewEventsClassName = builderClass.simpleName.asString().replace("Builder", "")
         val eventsToAdd = builderClass.eventsToAdd(resolver)
 
         val fileSpec = FileSpec.builder(
