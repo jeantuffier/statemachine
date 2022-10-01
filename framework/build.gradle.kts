@@ -3,7 +3,7 @@ plugins {
     id("maven-publish")
 }
 
-group = "com.jeantuffier"
+group = "com.jeantuffier.statemachine"
 version = "2.1.0-alpha1"
 
 repositories {
