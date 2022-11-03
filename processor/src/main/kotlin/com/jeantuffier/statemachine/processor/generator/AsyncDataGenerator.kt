@@ -19,9 +19,6 @@ class AsyncDataGenerator(
             packageName = "com.jeantuffier.statemachine",
             fileName = "LoadAsyncData",
         ).apply {
-            addImport(ReusableTransitionGenerator.PACKAGE_NAME, ReusableTransitionGenerator.INTERFACE_NAME)
-            addImport(TransitionKeyGenerator.PACKAGE_NAME, TransitionKeyGenerator.ENUM_NAME)
-            addImport("com.jeantuffier.statemachine.framework", "Transition")
             addImport("com.jeantuffier.statemachine.framework", "AsyncData")
             addImport("com.jeantuffier.statemachine.framework", "AsyncDataStatus")
             val loadEvent = TypeVariableName("LoadEvent")
@@ -41,7 +38,7 @@ class AsyncDataGenerator(
                     .addCode(
                         """
                         |return ReusableTransition { updater, event: LoadEvent -> 
-                        |val currentValue = updater.currentValue(key) as AsyncData<AsyncDataType>
+                        |val currentValue = updater.currentValue<AsyncData<AsyncDataType>>(key)
                         |updater.updateValue(
                         |key = key,
                         |newValue = currentValue.copy(status = AsyncDataStatus.LOADING)
