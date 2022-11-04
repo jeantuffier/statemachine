@@ -23,13 +23,12 @@ class ViewStateUpdaterGenerator(
     fun generateInterface() {
         val transitionKeyClass = TransitionKeyGenerator.className
         val values = ClassName("kotlin.collections", "Map")
-        val any = ClassName("kotlin", "Any")
-        val parameterizedValues = values.parameterizedBy(transitionKeyClass, any)
+        val parameterizedValues = values.parameterizedBy(transitionKeyClass, TypeVariableName("T"))
+
         val fileSpec = FileSpec.builder(
             packageName = PACKAGE_NAME,
             fileName = INTERFACE_NAME,
         ).apply {
-            addImport(TransitionKeyGenerator.PACKAGE_NAME, TransitionKeyGenerator.ENUM_NAME)
             addType(
                 TypeSpec.interfaceBuilder("ViewStateUpdater")
                     .addFunction(
@@ -43,13 +42,15 @@ class ViewStateUpdaterGenerator(
                     .addFunction(
                         FunSpec.builder("updateValue")
                             .addModifiers(KModifier.ABSTRACT)
+                            .addTypeVariable(TypeVariableName("T"))
                             .addParameter("key", transitionKeyClass)
-                            .addParameter("newValue", Any::class)
+                            .addParameter("newValue", TypeVariableName("T"))
                             .build()
                     )
                     .addFunction(
                         FunSpec.builder("updateValues")
                             .addModifiers(KModifier.ABSTRACT)
+                            .addTypeVariable(TypeVariableName("T"))
                             .addParameter("values", parameterizedValues)
                             .build()
                     )
@@ -74,7 +75,7 @@ class ViewStateUpdaterGenerator(
         ).apply {
             val crossProperties = crossProperties(viewStateClass)
             addImport("kotlinx.coroutines.flow", "MutableStateFlow", "update")
-            addImport("com.jeantuffier.statemachine", "ViewStateUpdater")
+            addImport("com.jeantuffier.statemachine.framework", "AsyncData")
             addType(
                 TypeSpec.classBuilder(updaterName)
                     .primaryConstructor(
@@ -143,15 +144,16 @@ private fun currentValue(crossProperties: List<String>): FunSpec {
         .build()
 }
 
-private fun updateValue(
+private fun ViewStateUpdaterGenerator.updateValue(
     logger: KSPLogger,
     viewStateClass: KSClassDeclaration,
     crossProperties: List<String>,
 ): FunSpec {
     val builder = FunSpec.builder("updateValue")
         .addModifiers(KModifier.OVERRIDE)
+        .addTypeVariable(TypeVariableName("T"))
         .addParameter("key", TransitionKeyGenerator.className)
-        .addParameter("newValue", Any::class)
+        .addParameter("newValue", TypeVariableName("T"))
         .beginControlFlow("when (key)")
 
     crossProperties.forEach { propertyName ->
@@ -172,13 +174,13 @@ private fun updateValue(
         .build()
 }
 
-private fun updateValues(): FunSpec {
+private fun ViewStateUpdaterGenerator.updateValues(): FunSpec {
     val valuesType = ClassName("kotlin.collections", "Map")
-    val any = ClassName("kotlin", "Any")
     val transitionKeyClass = TransitionKeyGenerator.className
-    val parameterizedValues = valuesType.parameterizedBy(transitionKeyClass, any)
+    val parameterizedValues = valuesType.parameterizedBy(transitionKeyClass, TypeVariableName("T"))
     return FunSpec.builder("updateValues")
         .addModifiers(KModifier.OVERRIDE)
+        .addTypeVariable(TypeVariableName("T"))
         .addParameter("values", parameterizedValues)
         .addStatement("values.entries.forEach { updateValue(it.key, it.value) }")
         .build()
