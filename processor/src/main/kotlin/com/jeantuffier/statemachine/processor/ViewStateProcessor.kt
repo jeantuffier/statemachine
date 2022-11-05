@@ -9,7 +9,9 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
 import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
-import com.jeantuffier.statemachine.processor.generator.*
+import com.jeantuffier.statemachine.processor.generator.TransitionKeyGenerator
+import com.jeantuffier.statemachine.processor.generator.ViewEventGenerator
+import com.jeantuffier.statemachine.processor.generator.ViewStateUpdaterGenerator
 import com.jeantuffier.statemachine.processor.validator.CrossStatePropertyValidator
 import com.jeantuffier.statemachine.processor.validator.ViewEventBuilderValidator
 import com.jeantuffier.statemachine.processor.validator.ViewStateValidator
@@ -25,9 +27,9 @@ class ViewStateProcessor(
     override fun process(resolver: Resolver): List<KSAnnotated> {
         generateViewEvents(resolver, logger, codeGenerator)
         generateKeys(resolver, logger, codeGenerator)
-        generateViewUpdaterInterface(resolver, logger, codeGenerator)
+        /*generateViewUpdaterInterface(resolver, logger, codeGenerator)
         generateReusableTransition(resolver, logger, codeGenerator)
-        generateLoadAsyncData(resolver, logger, codeGenerator)
+        generateLoadAsyncData(resolver, logger, codeGenerator)*/
         generateViewUpdaters(resolver, logger, codeGenerator)
 
         return emptyList()
@@ -88,7 +90,7 @@ private fun viewEventFileExists(
     return resolver.checkFileExists("${name}ViewEvent.kt")
 }
 
-private fun generateViewUpdaterInterface(
+/*private fun generateViewUpdaterInterface(
     resolver: Resolver,
     logger: KSPLogger,
     codeGenerator: CodeGenerator,
@@ -97,9 +99,9 @@ private fun generateViewUpdaterInterface(
         ViewStateUpdaterGenerator(logger, codeGenerator)
             .generateInterface()
     }
-}
+}*/
 
-private fun generateReusableTransition(
+/*private fun generateReusableTransition(
     resolver: Resolver,
     logger: KSPLogger,
     codeGenerator: CodeGenerator,
@@ -108,18 +110,20 @@ private fun generateReusableTransition(
         ReusableTransitionGenerator(codeGenerator)
             .generateInterface()
     }
-}
+}*/
 
-private fun generateLoadAsyncData(
+/*private fun generateLoadAsyncData(
     resolver: Resolver,
     logger: KSPLogger,
     codeGenerator: CodeGenerator,
 ) {
     if (!resolver.checkFileExists("LoadAsyncData.kt")) {
-        AsyncDataGenerator(logger, codeGenerator)
-            .generateLoadDataFunction()
+        with(AsyncDataGenerator(logger, codeGenerator)) {
+            generateLoadAsyncDataFunction()
+            generateLoadAsyncDataFlowFunction()
+        }
     }
-}
+}*/
 
 private fun generateViewUpdaters(
     resolver: Resolver,

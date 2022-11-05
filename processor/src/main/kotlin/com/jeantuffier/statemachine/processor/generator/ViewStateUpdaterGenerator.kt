@@ -6,11 +6,13 @@ import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
+import com.jeantuffier.statemachine.framework.ViewStateUpdater
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
+import kotlinx.coroutines.flow.MutableStateFlow
 
 private const val PACKAGE_NAME = "com.jeantuffier.statemachine"
 private const val INTERFACE_NAME = "ViewStateUpdater"
@@ -20,7 +22,7 @@ class ViewStateUpdaterGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
 
-    fun generateInterface() {
+    /*fun generateInterface() {
         val transitionKeyClass = TransitionKeyGenerator.className
         val values = ClassName("kotlin.collections", "Map")
         val parameterizedValues = values.parameterizedBy(transitionKeyClass, TypeVariableName("T"))
@@ -59,23 +61,33 @@ class ViewStateUpdaterGenerator(
         }.build()
 
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
-    }
+    }*/
 
     fun generateImplementation(viewStateClass: KSClassDeclaration, packageName: String) {
         val updaterName = "${viewStateClass.simpleName.asString()}Updater"
 
-        val mutableStateFlow = ClassName("kotlinx.coroutines.flow", "MutableStateFlow")
-        val parameterizedFlow = mutableStateFlow.parameterizedBy(viewStateClass.toClassName())
+        val parameterizedFlow = ClassName(
+            MutableStateFlow::class.java.packageName,
+            MutableStateFlow::class.java.simpleName,
+        ).parameterizedBy(viewStateClass.toClassName())
 
-        val viewStateUpdater = ClassName("com.jeantuffier.statemachine", "ViewStateUpdater")
+        val transitionKey = ClassName(
+            TransitionKeyGenerator.PACKAGE_NAME,
+            TransitionKeyGenerator.ENUM_NAME,
+        )
+
+        val viewStateUpdater = ClassName(
+            ViewStateUpdater::class.java.packageName,
+            ViewStateUpdater::class.java.simpleName,
+        ).parameterizedBy(transitionKey)
 
         val fileSpec = FileSpec.builder(
             packageName = packageName,
             fileName = updaterName,
         ).apply {
             val crossProperties = crossProperties(viewStateClass)
-            addImport("kotlinx.coroutines.flow", "MutableStateFlow", "update")
-            addImport("com.jeantuffier.statemachine.framework", "AsyncData")
+            addImport(MutableStateFlow::class.java.packageName, MutableStateFlow::class.java.simpleName)
+            addImport("kotlinx.coroutines.flow", "update")
             addType(
                 TypeSpec.classBuilder(updaterName)
                     .primaryConstructor(

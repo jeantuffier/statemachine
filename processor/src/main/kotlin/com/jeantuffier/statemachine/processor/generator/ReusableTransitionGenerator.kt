@@ -1,3 +1,4 @@
+/*
 package com.jeantuffier.statemachine.processor.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
@@ -41,4 +42,4 @@ class ReusableTransitionGenerator(
         const val INTERFACE_NAME = "ReusableTransition"
         val className = ClassName(PACKAGE_NAME, INTERFACE_NAME)
     }
-}
+}*/
