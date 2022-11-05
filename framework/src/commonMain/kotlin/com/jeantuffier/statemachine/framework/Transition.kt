@@ -10,3 +10,10 @@ fun interface ViewStateTransition<ViewState, Event> : Transition {
         event: Event,
     )
 }
+
+fun interface ReusableTransition<Key, Event> : Transition {
+    suspend operator fun invoke(
+        updater: ViewStateUpdater<Key>,
+        event: Event
+    )
+}

@@ -2,6 +2,7 @@ package com.jeantuffier.statemachine
 
 import arrow.core.Either
 import com.jeantuffier.statemachine.annotation.CrossViewEvent
+import com.jeantuffier.statemachine.framework.loadAsyncData
 import kotlin.native.concurrent.SharedImmutable
 
 @CrossViewEvent
@@ -17,13 +18,19 @@ interface LoadTeachersInterface {
 }
 
 @SharedImmutable
-val loadStudents = loadAsyncData<LoadStudentsInterface, AppError, List<Person>>(
+val loadStudents = loadAsyncData(
     key = TransitionKey.students,
-    loader = { event -> Either.Right(listOf(Person("student1", "student1"), Person("student2", "student2"))) },
+    loader = ::loadStudentFromRemoteServer,
 )
 
+private fun loadStudentFromRemoteServer(event: LoadStudentsInterface): Either<AppError, List<Person>> =
+    Either.Right(listOf(Person("student1", "student1"), Person("student2", "student2")))
+
 @SharedImmutable
-val loadTeachers = loadAsyncData<LoadTeachersInterface, AppError, List<Person>>(
+val loadTeachers = loadAsyncData(
     key = TransitionKey.teachers,
-    loader = { event -> Either.Right(listOf(Person("teacher1", "teacher1"), Person("teacher2", "teacher2"))) },
+    loader = ::loadTeachersFromRemoteServer,
 )
+
+private fun loadTeachersFromRemoteServer(event: LoadTeachersInterface): Either<AppError, List<Person>> =
+    Either.Right(listOf(Person("teacher1", "teacher1"), Person("teacher2", "teacher2")))
