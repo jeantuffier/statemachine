@@ -4,6 +4,8 @@ import app.cash.turbine.test
 import com.jeantuffier.statemachine.framework.AsyncDataStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -19,15 +21,16 @@ class StateMachineTest {
     }
 
     @Test
-    fun ensureInitialDataIsCorrect() = runBlockingTest {
+    fun ensureInitialDataIsCorrect() = runTest {
         schoolStateMachine.state.test {
             assertEquals(SchoolViewState(), awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
+        advanceUntilIdle()
     }
 
     @Test
-    fun isLoading() = runBlockingTest {
+    fun isLoading() = runTest {
         val flow: Flow<SchoolViewState> = schoolStateMachine.state
         flow.test {
             assertEquals(SchoolViewState(), awaitItem())
@@ -45,6 +48,7 @@ class StateMachineTest {
                 next.students.data,
             )
         }
+        advanceUntilIdle()
     }
 
     /*@Test
