@@ -21,48 +21,6 @@ class ViewStateUpdaterGenerator(
     private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator,
 ) {
-
-    /*fun generateInterface() {
-        val transitionKeyClass = TransitionKeyGenerator.className
-        val values = ClassName("kotlin.collections", "Map")
-        val parameterizedValues = values.parameterizedBy(transitionKeyClass, TypeVariableName("T"))
-
-        val fileSpec = FileSpec.builder(
-            packageName = PACKAGE_NAME,
-            fileName = INTERFACE_NAME,
-        ).apply {
-            addType(
-                TypeSpec.interfaceBuilder("ViewStateUpdater")
-                    .addFunction(
-                        FunSpec.builder("currentValue")
-                            .addModifiers(KModifier.ABSTRACT)
-                            .addTypeVariable(TypeVariableName("T"))
-                            .returns(TypeVariableName("T"))
-                            .addParameter("key", transitionKeyClass)
-                            .build()
-                    )
-                    .addFunction(
-                        FunSpec.builder("updateValue")
-                            .addModifiers(KModifier.ABSTRACT)
-                            .addTypeVariable(TypeVariableName("T"))
-                            .addParameter("key", transitionKeyClass)
-                            .addParameter("newValue", TypeVariableName("T"))
-                            .build()
-                    )
-                    .addFunction(
-                        FunSpec.builder("updateValues")
-                            .addModifiers(KModifier.ABSTRACT)
-                            .addTypeVariable(TypeVariableName("T"))
-                            .addParameter("values", parameterizedValues)
-                            .build()
-                    )
-                    .build()
-            )
-        }.build()
-
-        fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
-    }*/
-
     fun generateImplementation(viewStateClass: KSClassDeclaration, packageName: String) {
         val updaterName = "${viewStateClass.simpleName.asString()}Updater"
 
