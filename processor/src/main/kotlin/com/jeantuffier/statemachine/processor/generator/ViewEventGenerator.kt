@@ -50,9 +50,8 @@ class ViewEventGenerator(
         superType: TypeName,
     ): TypeSpec {
         val constructorParameters = event.getAllProperties().toList()
-        val name = event.simpleName.asString().replace("Interface", "")
         val isCrossEvent = event.annotations.firstOrNull()?.shortName?.asString() == "CrossViewEvent"
-        val builder = typeSpecBuilder(event, name)
+        val builder = typeSpecBuilder(event, event.simpleName.asString())
             .superclass(superType)
 
         if (event.classKind != ClassKind.OBJECT) {
@@ -75,11 +74,15 @@ class ViewEventGenerator(
         }
 
     private fun KSClassDeclaration.eventsToAdd(resolver: Resolver): List<KSClassDeclaration> {
-        val crossViewEventArguments = annotations.first().arguments.first().value as List<KSType>
-        return crossViewEventArguments.map { it.declaration.qualifiedName }
-            .mapNotNull { ksName ->
-                ksName?.let { resolver.getClassDeclarationByName(it) }
-            }.toList()
+        return mutableListOf<KSClassDeclaration>().apply {
+            val crossEvents = (annotations.first().arguments.first().value as List<KSType>)
+                .map { it.declaration.qualifiedName }
+                .mapNotNull { ksName ->
+                    ksName?.let { resolver.getClassDeclarationByName(it) }
+                }.toList()
+            addAll(crossEvents)
+            addAll(getSealedSubclasses())
+        }
     }
 
     private fun constructor(constructorParameters: List<KSPropertyDeclaration>) = FunSpec.constructorBuilder().apply {

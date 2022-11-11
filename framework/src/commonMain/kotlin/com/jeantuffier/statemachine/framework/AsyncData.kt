@@ -15,7 +15,7 @@ fun <T> AsyncData<T>.status(newStatus: AsyncDataStatus) = copy(status = newStatu
 fun <Key, Event, Error, AsyncDataType> loadAsyncData(
     key: Key,
     loader: suspend (Event) -> Either<Error, AsyncDataType>
-): ReusableTransition<Key, Event> = ReusableTransition { updater, event: Event ->
+): suspend (ViewStateUpdater<Key>, Event) -> Unit = { updater, event ->
     setLoading<Key, AsyncDataType>(key, updater)
     updater.updateValue(
         key = key,
@@ -26,7 +26,7 @@ fun <Key, Event, Error, AsyncDataType> loadAsyncData(
 fun <Key, Event, Error, AsyncDataType> loadAsyncDataFlow(
     key: Key,
     loader: suspend (Event) -> Flow<Either<Error, AsyncDataType>>
-): ReusableTransition<Key, Event> = ReusableTransition { updater, event: Event ->
+): suspend (ViewStateUpdater<Key>, Event) -> Unit = { updater, event ->
     setLoading<Key, AsyncDataType>(key, updater)
     loader(event).collect {
         updater.updateValue(

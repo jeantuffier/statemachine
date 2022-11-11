@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.*
  * its UI.
  *
  * The state machine exposes a [StateFlow] to retain its current state and be able to
- * emit new states to the client after executing a [Transition].
+ * emit new states to the client after reducing an event.
  */
 interface StateMachine<ViewState, Event> {
 
@@ -32,11 +32,9 @@ interface StateMachine<ViewState, Event> {
  * This class facilitate the implementation of a [StateMachine].
  * It already contains a [MutableStateFlow] to update the state machine state
  * and is used to override [StateMachine.state].
- * It also has a [StateMachineBuilder.onEvent] extension allowing simple
- * matching between events and transitions.
  *
  * @param initialValue: the value used to initialize the state.
- * @param reducer: a function matching events with transition. The easiest way
+ * @param reducer: a function matching events with business logic to execute. The easiest way
  * to do so is by using a `when` statement.
  */
 class StateMachineBuilder<ViewState, Event>(

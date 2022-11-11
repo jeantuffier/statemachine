@@ -6,31 +6,23 @@ import com.jeantuffier.statemachine.framework.loadAsyncData
 import kotlin.native.concurrent.SharedImmutable
 
 @CrossViewEvent
-interface LoadStudentsInterface {
+interface LoadStudentsEvent {
     val offset: Int
     val limit: Int
 }
 
 @CrossViewEvent
-interface LoadTeachersInterface {
+interface LoadTeachersEvent {
     val offset: Int
     val limit: Int
 }
 
 @SharedImmutable
-val loadStudents = loadAsyncData(
-    key = TransitionKey.students,
-    loader = ::loadStudentFromRemoteServer,
-)
-
-private fun loadStudentFromRemoteServer(event: LoadStudentsInterface): Either<AppError, List<Person>> =
+val loadStudents = loadAsyncData(TransitionKey.students) { _: LoadStudentsEvent ->
     Either.Right(listOf(Person("student1", "student1"), Person("student2", "student2")))
+}
 
 @SharedImmutable
-val loadTeachers = loadAsyncData(
-    key = TransitionKey.teachers,
-    loader = ::loadTeachersFromRemoteServer,
-)
-
-private fun loadTeachersFromRemoteServer(event: LoadTeachersInterface): Either<AppError, List<Person>> =
+val loadTeachers = loadAsyncData(TransitionKey.teachers) { _: LoadTeachersEvent ->
     Either.Right(listOf(Person("teacher1", "teacher1"), Person("teacher2", "teacher2")))
+}
