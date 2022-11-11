@@ -5,6 +5,7 @@ import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
 import com.jeantuffier.statemachine.framework.*
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 
 @ViewState
@@ -23,7 +24,7 @@ data class LoadAdminEmployees(val offset: Int, val limit: Int)
 
 @ViewEventsBuilder(
     crossViewEvents = [
-        LoadTeachersInterface::class,
+        LoadTeachersEvent::class,
         LoadStaffCount::class,
         LoadAdminEmployees::class,
     ]
@@ -35,34 +36,30 @@ class SchoolStaffStateMachine : StateMachine<SchoolStaffViewState, SchoolStaffVi
     reducer = { state, event ->
         val updater = SchoolStaffViewStateUpdater(state)
         when (event) {
-            is SchoolStaffViewEvents.LoadStaffCount -> loadStaffCount()
-            is SchoolStaffViewEvents.LoadTeachers -> loadTeachers(updater, event)
-            is SchoolStaffViewEvents.LoadAdminEmployees -> loadAdminEmployees()
-            else -> {}
+            is SchoolStaffViewEvents.LoadStaffCount -> {
+                state.update { it.copy(staffCount = 100) }
+            }
+
+            is SchoolStaffViewEvents.LoadTeachersEvent -> loadTeachers(updater, event)
+            is SchoolStaffViewEvents.LoadAdminEmployees -> loadAdminEmployees(state)
         }
     }
 )
 
-private fun loadStaffCount() =
-    ViewStateTransition<SchoolStaffViewState, SchoolStaffViewEvents.LoadStaffCount> { state, event ->
-        state.update { it.copy(staffCount = 100) }
+private suspend fun loadAdminEmployees(state: MutableStateFlow<SchoolStaffViewState>) {
+    val employees = state.value.adminEmployees
+    state.update { it.copy(adminEmployees = employees.status(AsyncDataStatus.LOADING)) }
+    delay(300)
+    state.update {
+        it.copy(
+            adminEmployees = employees.copy(
+                status = AsyncDataStatus.SUCCESS,
+                data = listOf(
+                    Person("admin1", "admin1"),
+                    Person("admin2", "admin2"),
+                    Person("admin3", "admin3"),
+                )
+            ),
+        )
     }
-
-private fun loadAdminEmployees() =
-    ViewStateTransition<SchoolStaffViewState, SchoolStaffViewEvents.LoadAdminEmployees> { state, event ->
-        val employees = state.value.adminEmployees
-        state.update { it.copy(adminEmployees = employees.status(AsyncDataStatus.LOADING)) }
-        delay(300)
-        state.update {
-            it.copy(
-                adminEmployees = employees.copy(
-                    status = AsyncDataStatus.SUCCESS,
-                    data = listOf(
-                        Person("admin1", "admin1"),
-                        Person("admin2", "admin2"),
-                        Person("admin3", "admin3"),
-                    )
-                ),
-            )
-        }
-    }
+}
