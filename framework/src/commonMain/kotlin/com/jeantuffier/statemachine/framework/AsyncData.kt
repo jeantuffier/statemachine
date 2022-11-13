@@ -19,7 +19,7 @@ fun <Key, Event, Error, AsyncDataType> loadAsyncData(
     setLoading<Key, AsyncDataType>(key, updater)
     updater.updateValue(
         key = key,
-        newValue = newValue(loader(event)),
+        newValue = newAsyncValue(loader(event)),
     )
 }
 
@@ -31,7 +31,7 @@ fun <Key, Event, Error, AsyncDataType> loadAsyncDataFlow(
     loader(event).collect {
         updater.updateValue(
             key = key,
-            newValue = newValue(it),
+            newValue = newAsyncValue(it),
         )
     }
 }
@@ -47,17 +47,18 @@ private fun <Key, AsyncDataType> setLoading(
     )
 }
 
-private fun <Error, AsyncDataType> newValue(result: Either<Error, AsyncDataType>) =
-    when (result) {
-        is Either.Left -> AsyncData(
-            data = null,
-            status = AsyncDataStatus.ERROR
-        )
+fun <Error, AsyncDataType> newAsyncValue(
+    result: Either<Error, AsyncDataType>
+): AsyncData<AsyncDataType> = when (result) {
+    is Either.Left -> AsyncData(
+        data = null,
+        status = AsyncDataStatus.ERROR
+    )
 
-        is Either.Right -> AsyncData(
-            data = result.value,
-            status = AsyncDataStatus.SUCCESS
-        )
-    }
+    is Either.Right -> AsyncData(
+        data = result.value,
+        status = AsyncDataStatus.SUCCESS
+    )
+}
 
 
