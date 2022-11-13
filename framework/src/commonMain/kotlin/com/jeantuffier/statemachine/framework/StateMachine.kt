@@ -1,6 +1,11 @@
 package com.jeantuffier.statemachine.framework
 
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * A [StateMachine] should be used to extract the business logic required in a client
@@ -22,6 +27,11 @@ interface StateMachine<ViewState, Event> {
     val state: StateFlow<ViewState>
 
     /**
+     * This scope should be used to run the state machine updates
+     */
+    val scope: CoroutineScope
+
+    /**
      * Clients should call this function whenever an [Event] is triggered by a user.
      * @param event: The event triggered by the user.
      */
@@ -39,11 +49,13 @@ interface StateMachine<ViewState, Event> {
  */
 class StateMachineBuilder<ViewState, Event>(
     initialValue: ViewState,
-    private val reducer: suspend (MutableStateFlow<ViewState>, Event) -> Unit
+    private val reducer: suspend CoroutineScope.(MutableStateFlow<ViewState>, Event) -> Unit
 ) : StateMachine<ViewState, Event> {
 
     private val _state = MutableStateFlow(initialValue)
     override val state = _state.asStateFlow()
 
-    override suspend fun <T : Event> reduce(event: T) = reducer(_state, event)
+    override val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+    override suspend fun <T : Event> reduce(event: T) = reducer(scope, _state, event)
 }
