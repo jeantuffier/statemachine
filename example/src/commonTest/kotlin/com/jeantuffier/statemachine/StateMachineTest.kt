@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.jeantuffier.statemachine.framework.AsyncDataStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import kotlin.test.BeforeTest
@@ -17,7 +18,7 @@ class StateMachineTest {
 
     @BeforeTest
     fun setUp() {
-        schoolStateMachine = SchoolStateMachine()
+        schoolStateMachine = SchoolStateMachine(TestScope())
     }
 
     @Test
