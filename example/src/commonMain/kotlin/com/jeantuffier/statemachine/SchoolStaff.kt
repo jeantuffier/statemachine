@@ -4,6 +4,7 @@ import com.jeantuffier.statemachine.annotation.CrossStateProperty
 import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
 import com.jeantuffier.statemachine.framework.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
@@ -31,8 +32,11 @@ data class LoadAdminEmployees(val offset: Int, val limit: Int)
 )
 class SchoolStaffViewEventsBuilder
 
-class SchoolStaffStateMachine : StateMachine<SchoolStaffViewState, SchoolStaffViewEvents> by StateMachineBuilder(
+class SchoolStaffStateMachine(
+    private val scope: CoroutineScope = defaultStateMachineScope()
+) : StateMachine<SchoolStaffViewState, SchoolStaffViewEvents> by StateMachineBuilder(
     initialValue = SchoolStaffViewState(),
+    scope = scope,
     reducer = { state, event ->
         val updater = SchoolStaffViewStateUpdater(state)
         when (event) {
