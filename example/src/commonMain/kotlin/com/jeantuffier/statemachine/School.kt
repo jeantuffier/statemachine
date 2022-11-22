@@ -6,6 +6,8 @@ import com.jeantuffier.statemachine.annotation.ViewState
 import com.jeantuffier.statemachine.framework.AsyncData
 import com.jeantuffier.statemachine.framework.StateMachine
 import com.jeantuffier.statemachine.framework.StateMachineBuilder
+import com.jeantuffier.statemachine.framework.defaultStateMachineScope
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.update
 
 @ViewState
@@ -30,8 +32,11 @@ sealed class SchoolViewEventsBuilder {
     object LoadSchoolData : SchoolViewEventsBuilder()
 }
 
-class SchoolStateMachine : StateMachine<SchoolViewState, SchoolViewEvents> by StateMachineBuilder(
+class SchoolStateMachine(
+    private val scope: CoroutineScope = defaultStateMachineScope()
+) : StateMachine<SchoolViewState, SchoolViewEvents> by StateMachineBuilder(
     initialValue = SchoolViewState(),
+    scope = scope,
     reducer = { state, event ->
         val updater = SchoolViewStateUpdater(state)
         when (event) {

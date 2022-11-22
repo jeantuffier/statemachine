@@ -27,11 +27,6 @@ interface StateMachine<ViewState, Event> {
     val state: StateFlow<ViewState>
 
     /**
-     * This scope should be used to run the state machine updates
-     */
-    val scope: CoroutineScope
-
-    /**
      * Clients should call this function whenever an [Event] is triggered by a user.
      * @param event: The event triggered by the user.
      */
@@ -44,18 +39,35 @@ interface StateMachine<ViewState, Event> {
  * and is used to override [StateMachine.state].
  *
  * @param initialValue: the value used to initialize the state.
+ * @param scope: the coroutine scope used by the state machine to run sub coroutines
  * @param reducer: a function matching events with business logic to execute. The easiest way
  * to do so is by using a `when` statement.
  */
+
 class StateMachineBuilder<ViewState, Event>(
     initialValue: ViewState,
+    private val scope: CoroutineScope,
     private val reducer: suspend CoroutineScope.(MutableStateFlow<ViewState>, Event) -> Unit
 ) : StateMachine<ViewState, Event> {
 
     private val _state = MutableStateFlow(initialValue)
     override val state = _state.asStateFlow()
 
-    override val scope: CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-
     override suspend fun <T : Event> reduce(event: T) = reducer(scope, _state, event)
 }
+
+/**
+ * A shortcut value to assign a scope to a state machine builder.
+ * It should not be used when running tests, instead use [TestScope]
+ */
+fun defaultStateMachineScope(): CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+
+/**
+ * A simple type alias for lambdas used in the reducer of a single state machine.
+ */
+typealias StateMachineUpdate<ViewState, Event> = suspend (MutableStateFlow<ViewState>, Event) -> Unit
+
+/**
+ * A simple type alias for lambdas used in the reducer of a several state machines.
+ */
+typealias StateMachineReusableUpdate<Key, Event> = suspend (ViewStateUpdater<Key>, Event) -> Unit
