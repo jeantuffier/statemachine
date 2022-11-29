@@ -37,6 +37,7 @@ kotlin {
                 implementation("com.squareup:kotlinpoet:1.12.0")
                 implementation("com.squareup:kotlinpoet-ksp:1.12.0")
                 implementation("com.google.devtools.ksp:symbol-processing-api:$kspVersion")
+                implementation("io.arrow-kt:arrow-core:1.1.3")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
             }
             kotlin.srcDir("src/main/kotlin")
