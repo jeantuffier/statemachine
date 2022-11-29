@@ -24,6 +24,11 @@ kotlin {
         }
     }
 
+    js(IR) {
+        browser()
+        binaries.executable()
+    }
+
     sourceSets {
 
         val commonMain by getting {
@@ -31,6 +36,7 @@ kotlin {
                 implementation(project(":annotation"))
                 implementation(project(":framework"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+                implementation("io.arrow-kt:arrow-core:1.1.3")
             }
             kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }
@@ -41,6 +47,7 @@ kotlin {
                 implementation(kotlin("test-annotations-common"))
                 implementation("app.cash.turbine:turbine:0.7.0")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
             }
         }
 
@@ -51,6 +58,13 @@ kotlin {
         val jvmTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+            }
+        }
+
+        val jsMain by getting
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-js"))
             }
         }
     }
