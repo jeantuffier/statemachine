@@ -2,6 +2,7 @@ package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
 import com.jeantuffier.statemachine.framework.AsyncDataStatus
+import com.jeantuffier.statemachine.framework.StateMachine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.test.TestScope
@@ -14,7 +15,7 @@ import kotlin.test.assertEquals
 @ExperimentalCoroutinesApi
 class StateMachineTest {
 
-    private lateinit var schoolStateMachine: SchoolStateMachine
+    private lateinit var schoolStateMachine: StateMachine<SchoolViewState, SchoolViewEvents>
 
     @BeforeTest
     fun setUp() {

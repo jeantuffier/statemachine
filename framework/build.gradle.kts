@@ -1,6 +1,7 @@
 plugins {
     kotlin("multiplatform")
     id("maven-publish")
+    id("com.rickclephas.kmp.nativecoroutines")
 }
 
 group = "com.jeantuffier.statemachine"
