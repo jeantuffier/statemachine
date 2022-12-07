@@ -1,11 +1,11 @@
 package com.jeantuffier.statemachine.framework
 
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.launch
 
 /**
  * A [StateMachine] should be used to extract the business logic required in a client
@@ -30,7 +30,9 @@ interface StateMachine<ViewState, Event> {
      * Clients should call this function whenever an [Event] is triggered by a user.
      * @param event: The event triggered by the user.
      */
-    suspend fun <T : Event> reduce(event: T)
+    fun <T : Event> reduce(event: T)
+
+    fun close()
 }
 
 /**
@@ -47,20 +49,20 @@ interface StateMachine<ViewState, Event> {
 class StateMachineBuilder<ViewState, Event>(
     initialValue: ViewState,
     private val scope: CoroutineScope,
-    private val reducer: suspend CoroutineScope.(MutableStateFlow<ViewState>, Event) -> Unit
+    private val reducer: suspend (MutableStateFlow<ViewState>, Event) -> Unit
 ) : StateMachine<ViewState, Event> {
 
-    private val _state = MutableStateFlow(initialValue)
-    override val state = _state.asStateFlow()
+    private val _state: MutableStateFlow<ViewState> = MutableStateFlow(initialValue)
+    override val state: StateFlow<ViewState> = _state.asStateFlow()
 
-    override suspend fun <T : Event> reduce(event: T) = reducer(scope, _state, event)
+    override fun <T : Event> reduce(event: T) {
+        scope.launch { reducer(_state, event) }
+    }
+
+    override fun close() {
+        scope.cancel()
+    }
 }
-
-/**
- * A shortcut value to assign a scope to a state machine builder.
- * It should not be used when running tests, instead use [TestScope]
- */
-fun defaultStateMachineScope(): CoroutineScope = CoroutineScope(Dispatchers.Default + SupervisorJob())
 
 /**
  * A simple type alias for lambdas used in the reducer of a single state machine.

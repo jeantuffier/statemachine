@@ -4,6 +4,7 @@ pluginManagement {
     plugins {
         id("com.google.devtools.ksp") version kspVersion apply false
         kotlin("multiplatform") version kotlinVersion apply false
+        id("com.rickclephas.kmp.nativecoroutines") version "0.13.1" apply false
     }
     repositories {
         google()
