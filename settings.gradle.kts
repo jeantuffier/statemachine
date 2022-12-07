@@ -12,6 +12,14 @@ pluginManagement {
     }
 }
 
+dependencyResolutionManagement {
+    repositories {
+        google()
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 rootProject.name = "statemachine"
 
 include(":annotation")
