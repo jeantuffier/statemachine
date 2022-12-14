@@ -6,9 +6,7 @@ import com.jeantuffier.statemachine.annotation.ViewState
 import com.jeantuffier.statemachine.framework.AsyncData
 import com.jeantuffier.statemachine.framework.StateMachine
 import com.jeantuffier.statemachine.framework.StateMachineBuilder
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.update
 
 @ViewState
@@ -47,8 +45,14 @@ class SchoolStateMachine(
                 }
             }
 
-            is SchoolViewEvents.LoadStudentsEvent -> loadStudents(updater, event)
-            is SchoolViewEvents.LoadTeachersEvent -> loadTeachers(updater, event)
+            is SchoolViewEvents.LoadStudentsEvent -> launch { updater.loadStudents(event, studentLoader) }
+            is SchoolViewEvents.LoadTeachersEvent -> launch { updater.loadTeachers(event, teacherLoader) }
         }
     }
 )
+
+private suspend fun doSomeWork(): Int {
+    delay(1000)
+    println("do some work")
+    return 0
+}
