@@ -1,11 +1,9 @@
 package com.jeantuffier.statemachine.framework
 
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.launch
 
 /**
  * A [StateMachine] should be used to extract the business logic required in a client
@@ -49,14 +47,16 @@ interface StateMachine<ViewState, Event> {
 class StateMachineBuilder<ViewState, Event>(
     initialValue: ViewState,
     private val scope: CoroutineScope,
-    private val reducer: suspend (MutableStateFlow<ViewState>, Event) -> Unit
+    private val reducer: CoroutineScope.(MutableStateFlow<ViewState>, Event) -> Unit
 ) : StateMachine<ViewState, Event> {
 
     private val _state: MutableStateFlow<ViewState> = MutableStateFlow(initialValue)
     override val state: StateFlow<ViewState> = _state.asStateFlow()
 
     override fun <T : Event> reduce(event: T) {
-        scope.launch { reducer(_state, event) }
+        scope.launch {
+            reducer(_state, event)
+        }
     }
 
     override fun close() {
