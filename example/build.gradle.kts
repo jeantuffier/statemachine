@@ -26,7 +26,6 @@ kotlin {
 
     js(IR) {
         browser()
-        binaries.executable()
     }
 
     sourceSets {
@@ -49,6 +48,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
             }
+            kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }
 
         val iosMain by getting
@@ -71,8 +71,17 @@ kotlin {
 }
 
 dependencies {
-    add("kspCommonMainMetadata", project(":processor"))
+//    add("kspCommonMainMetadata", project(":processor"))
 //    add("kspJvm", project(":processor"))
 //    add("kspIosArm64", project(":processor"))
 //    add("kspIosX64", project(":processor"))
+
+    add("kspCommonMainMetadata", project(":processor"))
+
+//    add("kspJvm", project(":processor"))
+//    add("kspJvmTest", project(":processor"))
+//    add("kspJs", project(":processor"))
+//    add("kspJsTest", project(":processor"))
+//    add("kspIosX64", project(":processor"))
+//    add("kspIosX64Test", project(":processor"))
 }

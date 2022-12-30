@@ -1,5 +1,6 @@
 package com.jeantuffier.statemachine
 
+import arrow.core.Either
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
 import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
@@ -9,6 +10,7 @@ import com.jeantuffier.statemachine.framework.StateMachineBuilder
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -20,17 +22,25 @@ data class StudentsViewState(
     val students: AsyncData<List<Person>> = AsyncData(emptyList()),
 )
 
-object LoadStudentCount
-
 @ViewEventsBuilder(
-    crossViewEvents = [
-        LoadStudentsEvent::class,
-        LoadStudentCount::class,
-    ]
+    crossViewEvents = [LoadStudentsEvent::class]
 )
-class StudentsViewEventsBuilder
+sealed class StudentsViewEventsBuilder {
+    object LoadStudentCount : StudentsViewEventsBuilder()
+}
+
+private val studentCountLoader: (
+    MutableStateFlow<StudentsViewState>,
+    StudentsViewEvents.LoadStudentCount
+) -> Unit = { state, _ ->
+    state.update {
+        it.copy(studentCount = 1000)
+    }
+}
 
 class StudentsStateMachine(
+    loadStudentCount: (MutableStateFlow<StudentsViewState>, StudentsViewEvents.LoadStudentCount) -> Unit = studentCountLoader,
+    loadStudent: suspend (LoadStudentsEvent) -> Either<SomeRandomError, List<Person>> = studentLoader,
     scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
 ) : StateMachine<StudentsViewState, StudentsViewEvents> by StateMachineBuilder(
     initialValue = StudentsViewState(),
@@ -38,11 +48,8 @@ class StudentsStateMachine(
     reducer = { state, event ->
         val updater = StudentsViewStateUpdater(state)
         when (event) {
-            is StudentsViewEvents.LoadStudentCount -> {
-                state.update { it.copy(studentCount = 2000) }
-            }
-
-            is StudentsViewEvents.LoadStudentsEvent -> launch { updater.loadStudents(event, studentLoader) }
+            is StudentsViewEvents.LoadStudentCount -> loadStudentCount(state, event)
+            is StudentsViewEvents.LoadStudentsEvent -> scope.launch { updater.loadStudents(event, loadStudent) }
         }
     }
 )

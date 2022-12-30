@@ -8,13 +8,10 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
-import com.jeantuffier.statemachine.framework.AsyncData
-import com.jeantuffier.statemachine.framework.ViewStateUpdater
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
-import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.squareup.kotlinpoet.ksp.writeTo
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.*
@@ -33,16 +30,6 @@ class ViewStateUpdaterGenerator(
             MutableStateFlow::class.java.packageName,
             MutableStateFlow::class.java.simpleName,
         ).parameterizedBy(viewStateClass.toClassName())
-
-        val transitionKey = ClassName(
-            TransitionKeyGenerator.PACKAGE_NAME,
-            TransitionKeyGenerator.ENUM_NAME,
-        )
-
-        val viewStateUpdater = ClassName(
-            ViewStateUpdater::class.java.packageName,
-            ViewStateUpdater::class.java.simpleName,
-        ).parameterizedBy(transitionKey)
 
         val fileSpec = FileSpec.builder(
             packageName = packageName,
@@ -65,22 +52,14 @@ class ViewStateUpdaterGenerator(
                             .addModifiers(KModifier.PRIVATE)
                             .build()
                     )
-                    //.addSuperinterface(viewStateUpdater)
                     .addProperties(properties(crossProperties))
                     .addFunctions(loadFunctions(crossProperties))
                     .addFunctions(updateFunctions(crossProperties))
-                    //.addFunction(currentValue(crossProperties))
-                    //.addFunction(updateValue(logger, viewStateClass, crossProperties))
-                    //.addFunction(updateValues())
                     .build()
             )
         }.build()
 
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
-    }
-
-    companion object {
-        val interfaceClassName = ClassName(PACKAGE_NAME, INTERFACE_NAME)
     }
 }
 
@@ -116,24 +95,6 @@ private fun KSAnnotation.checkName(name: String?): Boolean =
         .qualifiedName
         ?.asString() == name
 
-private fun currentValue(crossProperties: List<String>): FunSpec {
-    val builder = FunSpec.builder("currentValue")
-        .addModifiers(KModifier.OVERRIDE)
-        .addTypeVariable(TypeVariableName("T"))
-        .addParameter("key", TransitionKeyGenerator.className)
-        .returns(TypeVariableName("T"))
-        .beginControlFlow("return when (key)")
-
-    crossProperties.forEach {
-        builder.addStatement("TransitionKey.$it -> mutableStateFlow.value.$it as T")
-    }
-
-    return builder
-        .addStatement("else -> throw Exception(\"Key not supported\")")
-        .endControlFlow()
-        .build()
-}
-
 private fun properties(crossProperties: List<KSPropertyDeclaration>): List<PropertySpec> {
     return crossProperties.map {
         val name = it.simpleName.asString()
@@ -166,7 +127,8 @@ private fun loadFunctions(crossProperties: List<KSPropertyDeclaration>): List<Fu
             .addParameter(ParameterSpec.builder("event", event).build())
             .addParameter(
                 ParameterSpec.builder("loader", loadLambda)
-                    .build())
+                    .build()
+            )
             .addStatement(
                 """
                 | loadAsyncData($name, event, loader)
@@ -194,45 +156,3 @@ private fun updateFunctions(crossProperties: List<KSPropertyDeclaration>): List<
 
 private fun String.capitalize(): String =
     replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
-
-private fun ViewStateUpdaterGenerator.updateValue(
-    logger: KSPLogger,
-    viewStateClass: KSClassDeclaration,
-    crossProperties: List<String>,
-): FunSpec {
-    val builder = FunSpec.builder("updateValue")
-        .addModifiers(KModifier.OVERRIDE)
-        .addTypeVariable(TypeVariableName("T"))
-        .addParameter("key", TransitionKeyGenerator.className)
-        .addParameter("newValue", TypeVariableName("T"))
-        .beginControlFlow("when (key)")
-
-    crossProperties.forEach { propertyName ->
-        val property = viewStateClass.getDeclaredProperties()
-            .toList()
-            .firstOrNull { it.simpleName.asString() == propertyName }
-        if (property != null) {
-            val type = property.type.resolve().toTypeName()
-            builder.addStatement(
-                "TransitionKey.$propertyName -> mutableStateFlow.update { it.copy($propertyName = newValue as $type) }"
-            )
-        }
-    }
-
-    return builder
-        .addStatement("else -> {}")
-        .endControlFlow()
-        .build()
-}
-
-private fun ViewStateUpdaterGenerator.updateValues(): FunSpec {
-    val valuesType = ClassName("kotlin.collections", "Map")
-    val transitionKeyClass = TransitionKeyGenerator.className
-    val parameterizedValues = valuesType.parameterizedBy(transitionKeyClass, TypeVariableName("T"))
-    return FunSpec.builder("updateValues")
-        .addModifiers(KModifier.OVERRIDE)
-        .addTypeVariable(TypeVariableName("T"))
-        .addParameter("values", parameterizedValues)
-        .addStatement("values.entries.forEach { updateValue(it.key, it.value) }")
-        .build()
-}
