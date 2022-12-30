@@ -25,48 +25,26 @@ data class SchoolStaffViewState(
     val adminEmployees: AsyncData<List<Person>> = AsyncData(emptyList()),
 )
 
-object LoadStaffCount
+@ViewEventsBuilder(crossViewEvents = [LoadTeachersEvent::class])
+sealed class SchoolStaffViewEventsBuilder {
+    object LoadStaffCount : SchoolStaffViewEventsBuilder()
+    class LoadAdminEmployees(val offset: Int, val limit: Int) : SchoolStaffViewEventsBuilder()
+}
 
-data class LoadAdminEmployees(val offset: Int, val limit: Int)
-
-@ViewEventsBuilder(
-    crossViewEvents = [
-        LoadTeachersEvent::class,
-        LoadStaffCount::class,
-        LoadAdminEmployees::class,
-    ]
-)
-class SchoolStaffViewEventsBuilder
-
-class SchoolStaffStateMachine(
-    scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) : StateMachine<SchoolStaffViewState, SchoolStaffViewEvents> by StateMachineBuilder(
-    initialValue = SchoolStaffViewState(),
-    scope = scope,
-    reducer = { state, event ->
-        val updater = SchoolStaffViewStateUpdater(state)
-        when (event) {
-            is SchoolStaffViewEvents.LoadStaffCount -> {
-                state.update { it.copy(staffCount = 100) }
-            }
-
-            is SchoolStaffViewEvents.LoadTeachersEvent -> launch { updater.loadTeachers(event, teacherLoader) }
-            is SchoolStaffViewEvents.LoadAdminEmployees -> launch { loadAdminEmployees(state, event) }
-        }
-    }
-)
-
-private suspend fun loadAdminEmployees(
-    state: MutableStateFlow<SchoolStaffViewState>,
-    event: SchoolStaffViewEvents.LoadAdminEmployees,
-) {
-    loadAsyncData(state.value.adminEmployees, event, adminEmployeesLoader).collect { newValue ->
-        state.update { it.copy(adminEmployees = newValue) }
+private val staffCountLoader: (
+    MutableStateFlow<SchoolStaffViewState>,
+    SchoolStaffViewEvents.LoadStaffCount,
+) -> Unit = { state, event ->
+    state.update {
+        it.copy(staffCount = 100)
     }
 }
 
-val adminEmployeesLoader: suspend (SchoolStaffViewEvents.LoadAdminEmployees) -> Either<SomeRandomError, List<Person>> =
-    {
+private val adminEmployeesLoader: suspend (
+    state: MutableStateFlow<SchoolStaffViewState>,
+    event: SchoolStaffViewEvents.LoadAdminEmployees,
+) -> Unit = { state, event ->
+    loadAsyncData(state.value.adminEmployees, event) {
         Either.Right(
             listOf(
                 Person("admin1", "admin1"),
@@ -74,4 +52,25 @@ val adminEmployeesLoader: suspend (SchoolStaffViewEvents.LoadAdminEmployees) -> 
                 Person("admin3", "admin3"),
             )
         )
+    }.collect { newValue ->
+        state.update { it.copy(adminEmployees = newValue) }
     }
+}
+
+class SchoolStaffStateMachine(
+    loadStaffCount: (MutableStateFlow<SchoolStaffViewState>, SchoolStaffViewEvents.LoadStaffCount) -> Unit = staffCountLoader,
+    loadAdminEmployees: suspend (MutableStateFlow<SchoolStaffViewState>, SchoolStaffViewEvents.LoadAdminEmployees) -> Unit = adminEmployeesLoader,
+    loadTeachers: suspend (LoadTeachersEvent) -> Either<SomeRandomError, List<Person>> = teacherLoader,
+    scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
+) : StateMachine<SchoolStaffViewState, SchoolStaffViewEvents> by StateMachineBuilder(
+    initialValue = SchoolStaffViewState(),
+    scope = scope,
+    reducer = { state, event ->
+        val updater = SchoolStaffViewStateUpdater(state)
+        when (event) {
+            is SchoolStaffViewEvents.LoadStaffCount -> loadStaffCount(state, event)
+            is SchoolStaffViewEvents.LoadAdminEmployees -> scope.launch { loadAdminEmployees(state, event) }
+            is SchoolStaffViewEvents.LoadTeachersEvent -> scope.launch { updater.loadTeachers(event, loadTeachers) }
+        }
+    }
+)

@@ -7,9 +7,6 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 class ViewStateProcessorProvider : SymbolProcessorProvider {
 
     override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-        return ViewStateProcessor(
-            environment.codeGenerator,
-            environment.logger
-        )
+        return ViewStateProcessor(environment)
     }
 }

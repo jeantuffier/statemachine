@@ -1,30 +1,21 @@
 package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
-import com.jeantuffier.statemachine.framework.AsyncDataStatus
-import com.jeantuffier.statemachine.framework.StateMachine
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import kotlin.test.BeforeTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 @ExperimentalCoroutinesApi
 class StateMachineTest {
 
-    private lateinit var schoolStateMachine: StateMachine<SchoolViewState, SchoolViewEvents>
-
-    @BeforeTest
-    fun setUp() {
-        schoolStateMachine = SchoolStateMachine(TestScope())
-    }
-
     @Test
-    fun ensureInitialDataIsCorrect() = runTest {
-        schoolStateMachine.state.test {
+    fun initialStateShouldBeCorrect() = runTest {
+        SchoolStateMachine(scope = TestScope()).state.test {
             assertEquals(SchoolViewState(), awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -32,25 +23,23 @@ class StateMachineTest {
     }
 
     @Test
-    fun isLoading() = runTest {
-        val flow: Flow<SchoolViewState> = schoolStateMachine.state
-        flow.test(timeoutMs = 5_000L) {
+    fun loadDataShouldSucceed() = runTest {
+        val schoolStateMachine = SchoolStateMachine(
+            loadSchoolData = { state, _ ->
+                state.copy(id = "1", name = "name")
+            },
+            scope = TestScope(),
+        )
+        schoolStateMachine.state.test() {
             assertEquals(SchoolViewState(), awaitItem())
 
-            schoolStateMachine.reduce(SchoolViewEvents.LoadStudentsEvent(0, 20))
-            assertEquals(AsyncDataStatus.LOADING, awaitItem().students.status)
+            schoolStateMachine.reduce(SchoolViewEvents.LoadSchoolData)
 
-            /*val next = awaitItem()
-            assertEquals(AsyncDataStatus.SUCCESS, next.students.status)
-            assertEquals(
-                listOf(
-                    Person("student1", "student1"),
-                    Person("student2", "student2")
-                ),
-                next.students.data,
-            )*/
+            val next = awaitItem()
+            assertEquals("1", next.id)
+            assertEquals("name", next.name)
         }
-        //advanceUntilIdle()
+        advanceUntilIdle()
     }
 
     /*@Test

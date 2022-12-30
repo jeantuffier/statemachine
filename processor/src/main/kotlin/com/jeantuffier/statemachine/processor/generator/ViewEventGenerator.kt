@@ -1,8 +1,7 @@
 package com.jeantuffier.statemachine.processor.generator
 
-import com.google.devtools.ksp.processing.CodeGenerator
-import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
@@ -11,10 +10,7 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 
-class ViewEventGenerator(
-    private val logger: KSPLogger,
-    private val codeGenerator: CodeGenerator,
-) {
+class ViewEventGenerator(private val env: SymbolProcessorEnvironment) {
 
     fun generateViewEvent(
         builderClass: KSClassDeclaration,
@@ -42,7 +38,7 @@ class ViewEventGenerator(
 
         }.build()
 
-        fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
+        fileSpec.writeTo(codeGenerator = env.codeGenerator, aggregating = false)
     }
 
     private fun addSealedElement(
