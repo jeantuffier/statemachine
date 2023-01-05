@@ -1,10 +1,11 @@
 package com.jeantuffier.statemachine.framework
 
-import kotlinx.coroutines.*
+import arrow.core.Either
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.onEach
 
 /**
  * A [StateMachine] should be used to extract the business logic required in a client
@@ -29,7 +30,7 @@ interface StateMachine<ViewState, Event> {
      * Clients should call this function whenever an [Event] is triggered by a user.
      * @param event: The event triggered by the user.
      */
-    fun <T : Event> reduce(event: T)
+    suspend fun <T : Event> reduce(event: T)
 
     fun close()
 }
@@ -48,13 +49,13 @@ interface StateMachine<ViewState, Event> {
 class StateMachineBuilder<ViewState, Event>(
     initialValue: ViewState,
     private val scope: CoroutineScope,
-    private val reducer: (MutableStateFlow<ViewState>, Event) -> Unit
+    private val reducer: suspend (MutableStateFlow<ViewState>, Event) -> Unit
 ) : StateMachine<ViewState, Event> {
 
     private val _state: MutableStateFlow<ViewState> = MutableStateFlow(initialValue)
     override val state: StateFlow<ViewState> = _state.asStateFlow()
 
-    override fun <T : Event> reduce(event: T) {
+    override suspend fun <T : Event> reduce(event: T) {
         reducer(_state, event)
     }
 
@@ -63,32 +64,5 @@ class StateMachineBuilder<ViewState, Event>(
     }
 }
 
-fun <ViewState, Event> buildStateMachine(
-    initialValue: ViewState,
-    scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-    reducer: CoroutineScope.(MutableStateFlow<ViewState>, Event) -> Unit,
-) = object : StateMachine<ViewState, Event> {
-
-    private val _state: MutableStateFlow<ViewState> = MutableStateFlow(initialValue)
-    override val state: StateFlow<ViewState> = _state.asStateFlow()
-
-    override fun <T : Event> reduce(event: T) {
-        scope.launch {
-            reducer(_state, event)
-        }
-    }
-
-    override fun close() {
-        scope.cancel()
-    }
-}
-
-/**
- * A simple type alias for lambdas used in the reducer of a single state machine.
- */
-typealias StateMachineUpdate<ViewState, Event> = suspend (MutableStateFlow<ViewState>, Event) -> Unit
-
-/**
- * A simple type alias for lambdas used in the reducer of a several state machines.
- */
-typealias StateMachineReusableUpdate<Key, Event> = suspend (ViewStateUpdater<Key>, Event) -> Unit
+typealias StateUpdate<ViewState, Event> = (ViewState, Event) -> ViewState
+typealias AsyncDataUpdate<Event, Error, AsyncDataType> = suspend (Event) -> Either<Error, AsyncDataType>

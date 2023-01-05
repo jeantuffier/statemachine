@@ -49,24 +49,23 @@ class AsyncDataTest {
 
     @Test
     fun loadAsyncDataShouldFail() = runTest {
-        loadAsyncData(persons, loadTeachersEvent) {
-            Either.Left(SomeRandomError)
-        }.test {
-            assertEquals(
-                expected = persons.copy(status = AsyncDataStatus.LOADING),
-                actual = awaitItem(),
-            )
+        loadAsyncData(persons, loadTeachersEvent) { Either.Left(SomeRandomError) }
+            .test {
+                assertEquals(
+                    expected = persons.copy(status = AsyncDataStatus.LOADING),
+                    actual = awaitItem(),
+                )
 
-            assertEquals(
-                expected = AsyncData<List<Person>>(
-                    data = null,
-                    status = AsyncDataStatus.ERROR,
-                ),
-                actual = awaitItem()
-            )
+                assertEquals(
+                    expected = AsyncData(
+                        data = emptyList(),
+                        status = AsyncDataStatus.ERROR,
+                    ),
+                    actual = awaitItem()
+                )
 
-            awaitComplete()
-        }
+                awaitComplete()
+            }
     }
 
     @Test
@@ -126,8 +125,8 @@ class AsyncDataTest {
             )
 
             assertEquals(
-                expected = AsyncData<List<Person>>(
-                    data = null,
+                expected = AsyncData(
+                    data = emptyList(),
                     status = AsyncDataStatus.ERROR,
                 ),
                 actual = awaitItem()

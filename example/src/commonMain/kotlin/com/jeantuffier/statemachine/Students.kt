@@ -38,6 +38,7 @@ private val studentCountLoader: (
     }
 }
 
+/*
 class StudentsStateMachine(
     loadStudentCount: (MutableStateFlow<StudentsViewState>, StudentsViewEvents.LoadStudentCount) -> Unit = studentCountLoader,
     loadStudent: suspend (LoadStudentsEvent) -> Either<SomeRandomError, List<Person>> = studentLoader,
@@ -53,3 +54,4 @@ class StudentsStateMachine(
         }
     }
 )
+*/
