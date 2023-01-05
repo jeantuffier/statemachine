@@ -16,15 +16,12 @@ import com.squareup.kotlinpoet.ksp.writeTo
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.*
 
-private const val PACKAGE_NAME = "com.jeantuffier.statemachine"
-private const val INTERFACE_NAME = "ViewStateUpdater"
-
 class ViewStateUpdaterGenerator(
     private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator,
 ) {
     fun generateImplementation(viewStateClass: KSClassDeclaration, packageName: String) {
-        val updaterName = "${viewStateClass.simpleName.asString()}Updater"
+        val fileName = "${viewStateClass.simpleName.asString()}Extensions"
 
         val parameterizedFlow = ClassName(
             MutableStateFlow::class.java.packageName,
@@ -33,30 +30,14 @@ class ViewStateUpdaterGenerator(
 
         val fileSpec = FileSpec.builder(
             packageName = packageName,
-            fileName = updaterName,
+            fileName = fileName,
         ).apply {
             val crossProperties = crossProperties(viewStateClass)
             addImport(MutableStateFlow::class.java.packageName, MutableStateFlow::class.java.simpleName)
             addImport("kotlinx.coroutines.flow", "update")
             addImport("com.jeantuffier.statemachine.framework", "loadAsyncData")
-            addType(
-                TypeSpec.classBuilder(updaterName)
-                    .primaryConstructor(
-                        FunSpec.constructorBuilder()
-                            .addParameter("mutableStateFlow", parameterizedFlow)
-                            .build()
-                    )
-                    .addProperty(
-                        PropertySpec.builder("mutableStateFlow", parameterizedFlow)
-                            .initializer("mutableStateFlow")
-                            .addModifiers(KModifier.PRIVATE)
-                            .build()
-                    )
-                    .addProperties(properties(crossProperties))
-                    .addFunctions(loadFunctions(crossProperties))
-                    .addFunctions(updateFunctions(crossProperties))
-                    .build()
-            )
+            crossProperties.forEach { addFunction(loadFunction(it, viewStateClass.toClassName())) }
+            crossProperties.forEach { addFunction(updateFunction(it, viewStateClass.toClassName())) }
         }.build()
 
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
@@ -72,20 +53,6 @@ private fun crossProperties(viewStateClass: KSClassDeclaration): List<KSProperty
                 it.checkName(annotationType.qualifiedName)
             }
         }.toList()
-
-
-    /*return viewStateClass.getDeclaredProperties()
-        .flatMap { it.annotations }
-        .filter {
-            it.it.checkName(annotationType.qualifiedName)
-        }
-        .flatMap {
-
-            it.arguments
-        }
-        .filter { it.name?.asString() == "key" }
-        .map { it.value as String }
-        .toList()*/
 }
 
 private fun KSAnnotation.checkName(name: String?): Boolean =
@@ -95,63 +62,55 @@ private fun KSAnnotation.checkName(name: String?): Boolean =
         .qualifiedName
         ?.asString() == name
 
-private fun properties(crossProperties: List<KSPropertyDeclaration>): List<PropertySpec> {
-    return crossProperties.map {
-        val name = it.simpleName.asString()
-        val type = it.type.toTypeName()
-        PropertySpec.builder(name, type)
-            .getter(
-                FunSpec.getterBuilder()
-                    .addStatement("return mutableStateFlow.value.$name")
-                    .build()
-            )
-            .build()
-    }
-}
-
-private fun loadFunctions(crossProperties: List<KSPropertyDeclaration>): List<FunSpec> {
+private fun loadFunction(
+    crossProperty: KSPropertyDeclaration,
+    viewStateClass: ClassName,
+): FunSpec {
     val event = TypeVariableName("Event")
     val error = TypeVariableName("Error")
-    return crossProperties.map {
-        val name = it.simpleName.asString()
-        val type = it.type.resolve().arguments.first().toTypeName()
-        val loadLambda = LambdaTypeName.get(
-            parameters = arrayOf(event),
-            returnType = ClassName(Either::class.java.packageName, Either::class.java.simpleName)
-                .parameterizedBy(error, type)
-        ).copy(suspending = true)
-        FunSpec.builder("load${name.capitalize()}")
-            .addModifiers(KModifier.SUSPEND)
-            .addTypeVariable(event)
-            .addTypeVariable(error)
-            .addParameter(ParameterSpec.builder("event", event).build())
-            .addParameter(
-                ParameterSpec.builder("loader", loadLambda)
-                    .build()
-            )
-            .addStatement(
-                """
-                | loadAsyncData($name, event, loader)
-                |     .collect(::update${name.capitalize()})
-                """.trimMargin()
-            )
-            .build()
-    }
+    val mutableStateFlowType = ClassName(
+        MutableStateFlow::class.java.packageName,
+        MutableStateFlow::class.java.simpleName,
+    ).parameterizedBy(viewStateClass)
+    val name = crossProperty.simpleName.asString()
+    val type = crossProperty.type.resolve().arguments.first().toTypeName()
+    val loadLambda = LambdaTypeName.get(
+        parameters = arrayOf(event),
+        returnType = ClassName(Either::class.java.packageName, Either::class.java.simpleName)
+            .parameterizedBy(error, type)
+    ).copy(suspending = true)
+    return FunSpec.builder("load${name.capitalize()}")
+        .addModifiers(KModifier.SUSPEND)
+        .receiver(mutableStateFlowType)
+        .addTypeVariable(event)
+        .addTypeVariable(error)
+        .addParameter(ParameterSpec.builder("event", event).build())
+        .addParameter(
+            ParameterSpec.builder("loader", loadLambda)
+                .build()
+        )
+        .addStatement(
+            """
+            | loadAsyncData(value.$name, event, loader)
+            |     .collect(::update${name.capitalize()})
+        """.trimMargin()
+        )
+        .build()
 }
 
-private fun updateFunctions(crossProperties: List<KSPropertyDeclaration>): List<FunSpec> {
-    return crossProperties.map {
-        val name = it.simpleName.asString()
-        val type = it.type.toTypeName()
-        FunSpec.builder("update${name.capitalize()}")
-            .addParameter(ParameterSpec.builder("newValue", type).build())
-            .addStatement(
-                """
-                | mutableStateFlow.update { it.copy($name = newValue) }
-                """.trimMargin()
-            )
-            .build()
-    }
+private fun updateFunction(
+    crossProperty: KSPropertyDeclaration,
+    viewStateClass: ClassName,
+): FunSpec {
+    val name = crossProperty.simpleName.asString()
+    val type = crossProperty.type.toTypeName()
+    val receiver = ClassName(MutableStateFlow::class.java.packageName, MutableStateFlow::class.java.simpleName)
+        .parameterizedBy(viewStateClass)
+    return FunSpec.builder("update${name.capitalize()}")
+        .receiver(receiver)
+        .addParameter(ParameterSpec.builder("newValue", type).build())
+        .addStatement("return update { it.copy($name = newValue) }")
+        .build()
 }
 
 private fun String.capitalize(): String =

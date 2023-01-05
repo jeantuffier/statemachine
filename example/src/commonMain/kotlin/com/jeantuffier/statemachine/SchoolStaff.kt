@@ -57,7 +57,7 @@ private val adminEmployeesLoader: suspend (
     }
 }
 
-class SchoolStaffStateMachine(
+/*class SchoolStaffStateMachine(
     loadStaffCount: (MutableStateFlow<SchoolStaffViewState>, SchoolStaffViewEvents.LoadStaffCount) -> Unit = staffCountLoader,
     loadAdminEmployees: suspend (MutableStateFlow<SchoolStaffViewState>, SchoolStaffViewEvents.LoadAdminEmployees) -> Unit = adminEmployeesLoader,
     loadTeachers: suspend (LoadTeachersEvent) -> Either<SomeRandomError, List<Person>> = teacherLoader,
@@ -73,4 +73,4 @@ class SchoolStaffStateMachine(
             is SchoolStaffViewEvents.LoadTeachersEvent -> scope.launch { updater.loadTeachers(event, loadTeachers) }
         }
     }
-)
+)*/

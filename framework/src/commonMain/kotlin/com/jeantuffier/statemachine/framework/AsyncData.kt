@@ -18,7 +18,7 @@ suspend fun <AsyncDataType, Event, Error> loadAsyncData(
     loader: suspend (Event) -> Either<Error, AsyncDataType>,
 ): Flow<AsyncData<AsyncDataType>> = flow {
     setLoading(asyncData)
-    handleLoaderResult(loader(event))
+    handleLoaderResult(asyncData.data, loader(event))
 }
 
 suspend fun <AsyncDataType, Event, Error> loadAsyncDataFlow(
@@ -27,7 +27,9 @@ suspend fun <AsyncDataType, Event, Error> loadAsyncDataFlow(
     loader: suspend (Event) -> Flow<Either<Error, AsyncDataType>>,
 ): Flow<AsyncData<AsyncDataType>> = flow {
     setLoading(asyncData)
-    loader(event).collect(::handleLoaderResult)
+    loader(event).collect {
+        handleLoaderResult(asyncData.data, it)
+    }
 }
 
 private suspend fun <AsyncDataType> FlowCollector<AsyncData<AsyncDataType>>.setLoading(
@@ -35,11 +37,12 @@ private suspend fun <AsyncDataType> FlowCollector<AsyncData<AsyncDataType>>.setL
 ) = emit(asyncData.copy(status = AsyncDataStatus.LOADING))
 
 private suspend fun <AsyncDataType, Error> FlowCollector<AsyncData<AsyncDataType>>.handleLoaderResult(
+    currentValue: AsyncDataType?,
     result: Either<Error, AsyncDataType>
 ) = emit(
     when (result) {
         is Either.Left -> AsyncData(
-            data = null,
+            data = currentValue,
             status = AsyncDataStatus.ERROR
         )
 

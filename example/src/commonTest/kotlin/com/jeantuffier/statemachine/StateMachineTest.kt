@@ -1,6 +1,8 @@
 package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
+import arrow.core.Either
+import com.jeantuffier.statemachine.framework.AsyncDataStatus
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
@@ -15,22 +17,17 @@ class StateMachineTest {
 
     @Test
     fun initialStateShouldBeCorrect() = runTest {
-        SchoolStateMachine(scope = TestScope()).state.test {
+        SchoolStateMachine.create().state.test {
             assertEquals(SchoolViewState(), awaitItem())
-            cancelAndIgnoreRemainingEvents()
         }
-        advanceUntilIdle()
     }
 
     @Test
     fun loadDataShouldSucceed() = runTest {
-        val schoolStateMachine = SchoolStateMachine(
-            loadSchoolData = { state, _ ->
-                state.copy(id = "1", name = "name")
-            },
-            scope = TestScope(),
+        val schoolStateMachine = SchoolStateMachine.create(
+            loadSchoolData = { state, _ -> state.copy(id = "1", name = "name") },
         )
-        schoolStateMachine.state.test() {
+        schoolStateMachine.state.test {
             assertEquals(SchoolViewState(), awaitItem())
 
             schoolStateMachine.reduce(SchoolViewEvents.LoadSchoolData)
@@ -39,56 +36,46 @@ class StateMachineTest {
             assertEquals("1", next.id)
             assertEquals("name", next.name)
         }
-        advanceUntilIdle()
     }
 
-    /*@Test
-    fun isLoading2() = runBlockingTest {
-        val flow: Flow<ViewState2> = stateMachine2.state
-        flow.test {
-            assertEquals(ViewState2(), awaitItem())
+    @Test
+    fun loadStudentsShouldSucceed() = runTest {
+        val students = listOf(Person("student1", "student1"), Person("student2", "student2"))
+        val schoolStateMachine = SchoolStateMachine.create(
+            loadStudent = { event -> Either.Right(students) },
+        )
+        schoolStateMachine.state.test {
+            assertEquals(SchoolViewState(), awaitItem())
 
-            stateMachine2.reduce(Event.IsLoading(true))
-            assertEquals(true, awaitItem().isLoading)
+            schoolStateMachine.reduce(SchoolViewEvents.LoadStudentsEvent(0, 5))
 
-            stateMachine2.reduce(Event.IsLoading(false))
-            assertEquals(false, awaitItem().isLoading)
+            var next = awaitItem()
+            assertEquals(AsyncDataStatus.LOADING, next.students.status)
+            assertEquals(emptyList(), next.students.data)
+
+            next = awaitItem()
+            assertEquals(AsyncDataStatus.SUCCESS, next.students.status)
+            assertEquals(students, next.students.data)
         }
     }
 
     @Test
-    fun counter1() = runBlockingTest {
-        val flow: Flow<ViewState1> = stateMachine1.state
-        flow.test {
-            assertEquals(ViewState1(), awaitItem())
+    fun loadStudentShouldFail() = runTest {
+        val schoolStateMachine = SchoolStateMachine.create(
+            loadStudent = { event -> Either.Left(SomeRandomError) },
+        )
+        schoolStateMachine.state.test {
+            assertEquals(SchoolViewState(), awaitItem())
 
-            stateMachine1.reduce(Event.UpdateCounter(2))
-            assertEquals(2, awaitItem().counter)
+            schoolStateMachine.reduce(SchoolViewEvents.LoadStudentsEvent(0, 5))
 
-            stateMachine1.reduce(Event.UpdateCounter(3))
-            assertEquals(5, awaitItem().counter)
+            var next = awaitItem()
+            assertEquals(AsyncDataStatus.LOADING, next.students.status)
+            assertEquals(emptyList(), next.students.data)
 
-            stateMachine1.reduce(Event.UpdateCounter(1))
-            expectNoEvents()
-            cancel()
+            next = awaitItem()
+            assertEquals(AsyncDataStatus.ERROR, next.students.status)
+            assertEquals(emptyList(), next.students.data)
         }
     }
-
-    @Test
-    fun counter2() = runBlockingTest {
-        val flow: Flow<ViewState2> = stateMachine2.state
-        flow.test {
-            assertEquals(ViewState2(), awaitItem())
-
-            stateMachine2.reduce(Event.UpdateCounter(2))
-            assertEquals(2, awaitItem().counter)
-
-            stateMachine2.reduce(Event.UpdateCounter(3))
-            assertEquals(5, awaitItem().counter)
-
-            stateMachine2.reduce(Event.UpdateCounter(1))
-            expectNoEvents()
-            cancel()
-        }
-    }*/
 }

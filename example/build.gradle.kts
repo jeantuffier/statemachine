@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.jeantuffier"
-version = "2.1.0-alpha2"
+version = "2.1.0-beta1"
 
 repositories {
     google()
@@ -13,19 +13,26 @@ repositories {
 
 kotlin {
     jvm {
+        compilations.all {
+            kotlinOptions.jvmTarget = "11"
+        }
         withJava()
     }
-
+    js(IR) {
+        browser {
+            commonWebpackConfig {
+                cssSupport {
+                    enabled.set(true)
+                }
+            }
+        }
+    }
     ios {
         binaries {
             framework {
                 baseName = "StateMachine"
             }
         }
-    }
-
-    js(IR) {
-        browser()
     }
 
     sourceSets {
@@ -48,7 +55,6 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
             }
-            kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }
 
         val iosMain by getting
@@ -71,17 +77,5 @@ kotlin {
 }
 
 dependencies {
-//    add("kspCommonMainMetadata", project(":processor"))
-//    add("kspJvm", project(":processor"))
-//    add("kspIosArm64", project(":processor"))
-//    add("kspIosX64", project(":processor"))
-
     add("kspCommonMainMetadata", project(":processor"))
-
-//    add("kspJvm", project(":processor"))
-//    add("kspJvmTest", project(":processor"))
-//    add("kspJs", project(":processor"))
-//    add("kspJsTest", project(":processor"))
-//    add("kspIosX64", project(":processor"))
-//    add("kspIosX64Test", project(":processor"))
 }
