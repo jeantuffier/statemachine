@@ -14,7 +14,7 @@ class SchoolViewStateExtensionsTest {
 
     @Test
     fun shouldSucceedLoadTeachers() = runTest {
-        val event = object : LoadTeachersEvent {
+        val event = object : LoadTeachersAction {
             override val offset = 0
             override val limit = 20
         }
@@ -40,7 +40,7 @@ class SchoolViewStateExtensionsTest {
 
     @Test
     fun shouldFailToLoadTeachers() = runTest {
-        val event = object : LoadTeachersEvent {
+        val event = object : LoadTeachersAction {
             override val offset = 0
             override val limit = 20
         }

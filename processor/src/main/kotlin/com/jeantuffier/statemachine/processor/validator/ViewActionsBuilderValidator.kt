@@ -6,7 +6,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.validate
 
-class ViewEventBuilderValidator(
+class ViewActionsBuilderValidator(
     private val logger: KSPLogger,
 ) {
 
@@ -16,19 +16,18 @@ class ViewEventBuilderValidator(
                 && symbol.checkCrossViewEvents()
 
     private fun KSClassDeclaration.checkCrossViewEvents(): Boolean {
-        val crossViewEventArguments = annotations.first()
-            .arguments
-            .first()
+        val crossActionArguments = annotations.first()
+            .arguments[1]
             .value as List<KSType>
 
-        val annotations = crossViewEventArguments
+        val annotations = crossActionArguments
             .flatMap { it.declaration.annotations }
             .toList()
 
         return annotations.all {
             it.annotationType
                 .resolve()
-                .declaration.simpleName.asString() == "CrossViewEvent"
+                .declaration.simpleName.asString() == "CrossAction"
         }
     }
 }

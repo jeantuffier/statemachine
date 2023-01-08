@@ -3,13 +3,10 @@ package com.jeantuffier.statemachine.processor
 import com.google.devtools.ksp.processing.*
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.jeantuffier.statemachine.annotation.CrossStateProperty
-import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
+import com.jeantuffier.statemachine.annotation.ViewActionsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
-import com.jeantuffier.statemachine.processor.generator.ViewEventGenerator
 import com.jeantuffier.statemachine.processor.generator.ViewStateUpdaterGenerator
-import com.jeantuffier.statemachine.processor.validator.CrossStatePropertyValidator
-import com.jeantuffier.statemachine.processor.validator.ViewEventBuilderValidator
+import com.jeantuffier.statemachine.processor.validator.ViewActionsBuilderValidator
 import com.jeantuffier.statemachine.processor.validator.ViewStateValidator
 import com.jeantuffier.statemachine.processor.visitor.ViewEventVisitor
 import com.jeantuffier.statemachine.processor.visitor.ViewStateVisitor
@@ -61,11 +58,11 @@ private fun generateViewEvents(
     resolver: Resolver,
     env: SymbolProcessorEnvironment,
 ) {
-    val annotationName = ViewEventsBuilder::class.qualifiedName
+    val annotationName = ViewActionsBuilder::class.qualifiedName
     annotationName ?: return
 
     val annotations = resolver.symbolsWithAnnotations(annotationName)
-    val symbols = annotations.filter { ViewEventBuilderValidator(env.logger).isValid(it) }
+    val symbols = annotations.filter { ViewActionsBuilderValidator(env.logger).isValid(it) }
 
     val exists = symbols.all { viewEventFileExists(it, resolver, env.logger) }
     if (!exists) {

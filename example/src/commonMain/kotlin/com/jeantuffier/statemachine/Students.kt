@@ -1,18 +1,11 @@
 package com.jeantuffier.statemachine
 
-import arrow.core.Either
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
-import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
+import com.jeantuffier.statemachine.annotation.ViewActionsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
 import com.jeantuffier.statemachine.framework.AsyncData
-import com.jeantuffier.statemachine.framework.StateMachine
-import com.jeantuffier.statemachine.framework.StateMachineBuilder
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 
 @ViewState
 data class StudentsViewState(
@@ -22,11 +15,12 @@ data class StudentsViewState(
     val students: AsyncData<List<Person>> = AsyncData(emptyList()),
 )
 
-@ViewEventsBuilder(
-    crossViewEvents = [LoadStudentsEvent::class]
+@ViewActionsBuilder(
+    className = "StudentsViewActions",
+    crossActions = [LoadStudentsAction::class]
 )
-sealed class StudentsViewEventsBuilder {
-    object LoadStudentCount : StudentsViewEventsBuilder()
+sealed class StudentsViewActionsBuilder {
+    object LoadStudentCount : StudentsViewActionsBuilder()
 }
 
 private val studentCountLoader: (

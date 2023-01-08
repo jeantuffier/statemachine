@@ -1,8 +1,7 @@
 package com.jeantuffier.statemachine
 
-import arrow.core.Either
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
-import com.jeantuffier.statemachine.annotation.ViewEventsBuilder
+import com.jeantuffier.statemachine.annotation.ViewActionsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
 import com.jeantuffier.statemachine.framework.*
 import kotlinx.coroutines.CoroutineScope
@@ -22,14 +21,15 @@ data class SchoolViewState(
     val students: AsyncData<List<Person>> = AsyncData(emptyList()),
 )
 
-@ViewEventsBuilder(
-    crossViewEvents = [
-        LoadStudentsEvent::class,
-        LoadTeachersEvent::class,
+@ViewActionsBuilder(
+    className = "SchoolViewActions",
+    crossActions = [
+        LoadStudentsAction::class,
+        LoadTeachersAction::class,
     ]
 )
-sealed class SchoolViewEventsBuilder {
-    object LoadSchoolData : SchoolViewEventsBuilder()
+sealed class SchoolViewActionsBuilder {
+    object LoadSchoolData : SchoolViewActionsBuilder()
 }
 
 private val schoolDataLoader: (
@@ -39,8 +39,8 @@ private val schoolDataLoader: (
 
 class SchoolStateMachine internal constructor(
     dataLoader: StateUpdate<SchoolViewState, SchoolViewEvents.LoadSchoolData>,
-    studentLoader: AsyncDataUpdate<LoadStudentsEvent, SomeRandomError, List<Person>>,
-    teacherLoader: AsyncDataUpdate<LoadTeachersEvent, SomeRandomError, List<Person>>,
+    studentLoader: AsyncDataUpdate<LoadStudentsAction, SomeRandomError, List<Person>>,
+    teacherLoader: AsyncDataUpdate<LoadTeachersAction, SomeRandomError, List<Person>>,
     scope: CoroutineScope,
 ) : StateMachine<SchoolViewState, SchoolViewEvents> by StateMachineBuilder(
     initialValue = SchoolViewState(),
@@ -56,8 +56,8 @@ class SchoolStateMachine internal constructor(
     companion object {
         fun create(
             loadSchoolData: StateUpdate<SchoolViewState, SchoolViewEvents.LoadSchoolData> = schoolDataLoader,
-            loadStudent: AsyncDataUpdate<LoadStudentsEvent, SomeRandomError, List<Person>> = studentLoader,
-            loadTeacher: AsyncDataUpdate<LoadTeachersEvent, SomeRandomError, List<Person>> = teacherLoader,
+            loadStudent: AsyncDataUpdate<LoadStudentsAction, SomeRandomError, List<Person>> = studentLoader,
+            loadTeacher: AsyncDataUpdate<LoadTeachersAction, SomeRandomError, List<Person>> = teacherLoader,
             scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         ) = SchoolStateMachine(loadSchoolData, loadStudent, loadTeacher, scope)
     }

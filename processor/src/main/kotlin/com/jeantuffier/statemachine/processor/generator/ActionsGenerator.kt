@@ -10,24 +10,27 @@ import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 
-class ViewEventGenerator(private val env: SymbolProcessorEnvironment) {
+class ActionsGenerator(private val env: SymbolProcessorEnvironment) {
 
     fun generateViewEvent(
         builderClass: KSClassDeclaration,
         packageName: String,
         resolver: Resolver,
     ) {
-        val viewEventsClassName = builderClass.simpleName.asString().replace("Builder", "")
+        val actionsClassName = builderClass.annotations.first()
+            .arguments
+            .first()
+            .value as String
         val eventsToAdd = builderClass.eventsToAdd(resolver)
 
         val fileSpec = FileSpec.builder(
             packageName = packageName,
-            fileName = viewEventsClassName,
+            fileName = actionsClassName,
         ).apply {
-            val sealedClass = TypeSpec.classBuilder(viewEventsClassName)
+            val sealedClass = TypeSpec.classBuilder(actionsClassName)
                 .addModifiers(KModifier.SEALED)
 
-            val className = ClassName("", viewEventsClassName)
+            val className = ClassName("", actionsClassName)
             eventsToAdd.forEach { event ->
                 val typeSpec = addSealedElement(event, className)
                 sealedClass.addType(typeSpec)
@@ -71,7 +74,7 @@ class ViewEventGenerator(private val env: SymbolProcessorEnvironment) {
 
     private fun KSClassDeclaration.eventsToAdd(resolver: Resolver): List<KSClassDeclaration> {
         return mutableListOf<KSClassDeclaration>().apply {
-            val crossEvents = (annotations.first().arguments.first().value as List<KSType>)
+            val crossEvents = (annotations.first().arguments[1].value as List<KSType>)
                 .map { it.declaration.qualifiedName }
                 .mapNotNull { ksName ->
                     ksName?.let { resolver.getClassDeclarationByName(it) }
