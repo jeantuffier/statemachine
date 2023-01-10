@@ -6,11 +6,12 @@ import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import com.jeantuffier.statemachine.annotation.CrossAction
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 
-class ActionsGenerator(private val env: SymbolProcessorEnvironment) {
+class ViewStateActionsGenerator(private val env: SymbolProcessorEnvironment) {
 
     fun generateViewEvent(
         builderClass: KSClassDeclaration,
@@ -49,7 +50,7 @@ class ActionsGenerator(private val env: SymbolProcessorEnvironment) {
         superType: TypeName,
     ): TypeSpec {
         val constructorParameters = event.getAllProperties().toList()
-        val isCrossEvent = event.annotations.firstOrNull()?.shortName?.asString() == "CrossViewEvent"
+        val isCrossEvent = event.annotations.firstOrNull()?.shortName?.asString() == CrossAction::class.java.simpleName
         val builder = typeSpecBuilder(event, event.simpleName.asString())
             .superclass(superType)
 

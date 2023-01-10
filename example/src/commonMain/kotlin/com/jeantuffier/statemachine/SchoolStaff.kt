@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.update
 data class SchoolStaffViewState(
     val staffCount: Int = 0,
 
-    @CrossStateProperty(key = "teachers")
+    @CrossStateProperty
     val teachers: AsyncData<List<Person>> = AsyncData(emptyList()),
 
     val adminEmployees: AsyncData<List<Person>> = AsyncData(emptyList()),
@@ -30,7 +30,7 @@ sealed class SchoolStaffViewActionsBuilder {
 
 private val staffCountLoader: (
     MutableStateFlow<SchoolStaffViewState>,
-    SchoolStaffViewEvents.LoadStaffCount,
+    SchoolStaffViewActions.LoadStaffCount,
 ) -> Unit = { state, event ->
     state.update {
         it.copy(staffCount = 100)
@@ -39,7 +39,7 @@ private val staffCountLoader: (
 
 private val adminEmployeesLoader: suspend (
     state: MutableStateFlow<SchoolStaffViewState>,
-    event: SchoolStaffViewEvents.LoadAdminEmployees,
+    event: SchoolStaffViewActions.LoadAdminEmployees,
 ) -> Unit = { state, event ->
     loadAsyncData(state.value.adminEmployees, event) {
         Either.Right(
@@ -53,21 +53,3 @@ private val adminEmployeesLoader: suspend (
         state.update { it.copy(adminEmployees = newValue) }
     }
 }
-
-/*class SchoolStaffStateMachine(
-    loadStaffCount: (MutableStateFlow<SchoolStaffViewState>, SchoolStaffViewEvents.LoadStaffCount) -> Unit = staffCountLoader,
-    loadAdminEmployees: suspend (MutableStateFlow<SchoolStaffViewState>, SchoolStaffViewEvents.LoadAdminEmployees) -> Unit = adminEmployeesLoader,
-    loadTeachers: suspend (LoadTeachersEvent) -> Either<SomeRandomError, List<Person>> = teacherLoader,
-    scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-) : StateMachine<SchoolStaffViewState, SchoolStaffViewEvents> by StateMachineBuilder(
-    initialValue = SchoolStaffViewState(),
-    scope = scope,
-    reducer = { state, event ->
-        val updater = SchoolStaffViewStateUpdater(state)
-        when (event) {
-            is SchoolStaffViewEvents.LoadStaffCount -> loadStaffCount(state, event)
-            is SchoolStaffViewEvents.LoadAdminEmployees -> scope.launch { loadAdminEmployees(state, event) }
-            is SchoolStaffViewEvents.LoadTeachersEvent -> scope.launch { updater.loadTeachers(event, loadTeachers) }
-        }
-    }
-)*/

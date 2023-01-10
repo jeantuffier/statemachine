@@ -17,10 +17,6 @@ class ViewStateProcessor(
 
     override fun process(resolver: Resolver): List<KSAnnotated> {
         generateViewEvents(resolver, environment)
-        /*generateKeys(resolver, logger, codeGenerator)
-        generateViewUpdaterInterface(resolver, logger, codeGenerator)
-        generateReusableTransition(resolver, logger, codeGenerator)
-        generateLoadAsyncData(resolver, logger, codeGenerator)*/
         generateViewUpdaters(resolver, environment)
 
         return emptyList()
@@ -30,29 +26,6 @@ class ViewStateProcessor(
 private fun Resolver.symbolsWithAnnotations(annotationName: String) =
     getSymbolsWithAnnotation(annotationName)
         .toList()
-
-/*private fun generateKeys(
-    resolver: Resolver,
-    logger: KSPLogger,
-    codeGenerator: CodeGenerator,
-) {
-    val annotationName = CrossStateProperty::class.qualifiedName
-    annotationName ?: return
-
-    val propertyAnnotations = resolver.symbolsWithAnnotations(annotationName)
-    val validator = CrossStatePropertyValidator(logger)
-    val propertySymbols = propertyAnnotations.filter { validator.isValid(it) }
-    val transitionKeyVisitor = TransitionKeyVisitor(logger)
-    val transitionKeyGenerator = TransitionKeyGenerator(logger, codeGenerator)
-
-    propertySymbols
-        .forEachIndexed { index, validSymbol ->
-            validSymbol.accept(transitionKeyVisitor, Unit)
-            if (index == propertySymbols.lastIndex) {
-                transitionKeyGenerator.generateTransitionKeys(transitionKeyVisitor.properties)
-            }
-        }
-}*/
 
 private fun generateViewEvents(
     resolver: Resolver,
@@ -79,41 +52,6 @@ private fun viewEventFileExists(
     val name = (annotated as KSClassDeclaration).simpleName
     return resolver.checkFileExists("${name}ViewEvent.kt")
 }
-
-/*private fun generateViewUpdaterInterface(
-    resolver: Resolver,
-    logger: KSPLogger,
-    codeGenerator: CodeGenerator,
-) {
-    if (!resolver.checkFileExists("ViewStateUpdater.kt")) {
-        ViewStateUpdaterGenerator(logger, codeGenerator)
-            .generateInterface()
-    }
-}*/
-
-/*private fun generateReusableTransition(
-    resolver: Resolver,
-    logger: KSPLogger,
-    codeGenerator: CodeGenerator,
-) {
-    if (!resolver.checkFileExists("ReusableTransition.kt")) {
-        ReusableTransitionGenerator(codeGenerator)
-            .generateInterface()
-    }
-}*/
-
-/*private fun generateLoadAsyncData(
-    resolver: Resolver,
-    logger: KSPLogger,
-    codeGenerator: CodeGenerator,
-) {
-    if (!resolver.checkFileExists("LoadAsyncData.kt")) {
-        with(AsyncDataGenerator(logger, codeGenerator)) {
-            generateLoadAsyncDataFunction()
-            generateLoadAsyncDataFlowFunction()
-        }
-    }
-}*/
 
 private fun generateViewUpdaters(
     resolver: Resolver,

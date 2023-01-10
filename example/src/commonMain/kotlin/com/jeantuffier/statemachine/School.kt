@@ -14,10 +14,10 @@ data class SchoolViewState(
     val id: String = "",
     val name: String = "",
 
-    @CrossStateProperty(key = "teachers")
+    @CrossStateProperty
     val teachers: AsyncData<List<Person>> = AsyncData(emptyList()),
 
-    @CrossStateProperty(key = "students")
+    @CrossStateProperty
     val students: AsyncData<List<Person>> = AsyncData(emptyList()),
 )
 
@@ -34,28 +34,28 @@ sealed class SchoolViewActionsBuilder {
 
 private val schoolDataLoader: (
     SchoolViewState,
-    SchoolViewEvents.LoadSchoolData,
+    SchoolViewActions.LoadSchoolData,
 ) -> SchoolViewState = { state, event -> state.copy(id = "school 1", name = "School One") }
 
 class SchoolStateMachine internal constructor(
-    dataLoader: StateUpdate<SchoolViewState, SchoolViewEvents.LoadSchoolData>,
+    dataLoader: StateUpdate<SchoolViewState, SchoolViewActions.LoadSchoolData>,
     studentLoader: AsyncDataUpdate<LoadStudentsAction, SomeRandomError, List<Person>>,
     teacherLoader: AsyncDataUpdate<LoadTeachersAction, SomeRandomError, List<Person>>,
     scope: CoroutineScope,
-) : StateMachine<SchoolViewState, SchoolViewEvents> by StateMachineBuilder(
+) : StateMachine<SchoolViewState, SchoolViewActions> by StateMachineBuilder(
     initialValue = SchoolViewState(),
     scope = scope,
     reducer = { state, event ->
         when (event) {
-            is SchoolViewEvents.LoadSchoolData -> state.update { dataLoader(state.value, event) }
-            is SchoolViewEvents.LoadStudentsEvent -> state.loadStudents(event, studentLoader)
-            is SchoolViewEvents.LoadTeachersEvent -> state.loadTeachers(event, teacherLoader)
+            is SchoolViewActions.LoadSchoolData -> state.update { dataLoader(state.value, event) }
+            is SchoolViewActions.LoadStudentsAction -> state.loadStudents(event, studentLoader)
+            is SchoolViewActions.LoadTeachersAction -> state.loadTeachers(event, teacherLoader)
         }
     }
 ) {
     companion object {
         fun create(
-            loadSchoolData: StateUpdate<SchoolViewState, SchoolViewEvents.LoadSchoolData> = schoolDataLoader,
+            loadSchoolData: StateUpdate<SchoolViewState, SchoolViewActions.LoadSchoolData> = schoolDataLoader,
             loadStudent: AsyncDataUpdate<LoadStudentsAction, SomeRandomError, List<Person>> = studentLoader,
             loadTeacher: AsyncDataUpdate<LoadTeachersAction, SomeRandomError, List<Person>> = teacherLoader,
             scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),

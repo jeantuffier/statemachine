@@ -4,7 +4,7 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSVisitorVoid
-import com.jeantuffier.statemachine.processor.generator.ActionsGenerator
+import com.jeantuffier.statemachine.processor.generator.ViewStateActionsGenerator
 
 class ViewEventVisitor(
     private val resolver: Resolver,
@@ -12,10 +12,7 @@ class ViewEventVisitor(
 ) : KSVisitorVoid() {
 
     override fun visitClassDeclaration(classDeclaration: KSClassDeclaration, data: Unit) {
-//        val platforms = env.platforms.map { it }
-//        val options = env.options.map { "${it.key}:${it.value}" }.joinToString()
-//        env.logger.warn("ViewEventVisitor | options: $options")
         val packageName = classDeclaration.packageName.asString()
-        ActionsGenerator(env).generateViewEvent(classDeclaration, packageName, resolver)
+        ViewStateActionsGenerator(env).generateViewEvent(classDeclaration, packageName, resolver)
     }
 }
