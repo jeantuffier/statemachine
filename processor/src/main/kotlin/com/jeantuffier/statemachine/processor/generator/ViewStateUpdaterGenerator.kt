@@ -123,36 +123,19 @@ private fun onUiEvent(
     crossProperty: KSPropertyDeclaration,
     viewStateClass: ClassName,
 ): FunSpec {
-    val event = TypeVariableName("Event")
     val mutableStateFlowType = ClassName(
         MutableStateFlow::class.java.packageName,
         MutableStateFlow::class.java.simpleName,
     ).parameterizedBy(viewStateClass)
     val name = crossProperty.simpleName.asString()
-    val type = crossProperty.type.resolve().arguments.first().toTypeName()
-    /*val loadLambda = LambdaTypeName.get(
-        parameters = arrayOf(event),
-        returnType = ClassName(Either::class.java.packageName, Either::class.java.simpleName)
-            .parameterizedBy(error, type)
-    ).copy(suspending = true)
-    return FunSpec.builder("load${name.capitalize()}")
+    return FunSpec.builder("on${name.capitalize()}")
         .addModifiers(KModifier.SUSPEND)
         .receiver(mutableStateFlowType)
-        .addTypeVariable(event)
-        .addTypeVariable(error)
-        .addParameter(ParameterSpec.builder("event", event).build())
         .addParameter(
-            ParameterSpec.builder("loader", loadLambda)
+            ParameterSpec.builder("uiEvent", UiEvent::class.asTypeName())
                 .build()
         )
-        .addStatement(
-            """
-            | loadAsyncData(value.$name, event, loader)
-            |     .collect(::update${name.capitalize()})
-        """.trimMargin()
-        )
-        .build()*/
-    return FunSpec.builder("load${name.capitalize()}")
+        .addStatement("return update { it.copy(uiEvents = value.uiEvents + uiEvent) }")
         .build()
 }
 
