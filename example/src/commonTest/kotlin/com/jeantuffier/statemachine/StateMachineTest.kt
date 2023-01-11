@@ -30,7 +30,7 @@ class StateMachineTest {
         schoolStateMachine.state.test {
             assertEquals(SchoolViewState(), awaitItem())
 
-            schoolStateMachine.reduce(SchoolViewEvents.LoadSchoolData)
+            schoolStateMachine.reduce(SchoolViewActions.LoadSchoolData)
 
             val next = awaitItem()
             assertEquals("1", next.id)
@@ -47,7 +47,7 @@ class StateMachineTest {
         schoolStateMachine.state.test {
             assertEquals(SchoolViewState(), awaitItem())
 
-            schoolStateMachine.reduce(SchoolViewEvents.LoadStudentsEvent(0, 5))
+            schoolStateMachine.reduce(SchoolViewActions.LoadStudentsAction(0, 5))
 
             var next = awaitItem()
             assertEquals(AsyncDataStatus.LOADING, next.students.status)
@@ -67,7 +67,7 @@ class StateMachineTest {
         schoolStateMachine.state.test {
             assertEquals(SchoolViewState(), awaitItem())
 
-            schoolStateMachine.reduce(SchoolViewEvents.LoadStudentsEvent(0, 5))
+            schoolStateMachine.reduce(SchoolViewActions.LoadStudentsAction(0, 5))
 
             var next = awaitItem()
             assertEquals(AsyncDataStatus.LOADING, next.students.status)

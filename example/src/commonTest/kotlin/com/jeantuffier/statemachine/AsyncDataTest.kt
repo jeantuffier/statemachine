@@ -16,7 +16,7 @@ import kotlin.test.assertEquals
 @OptIn(ExperimentalCoroutinesApi::class)
 class AsyncDataTest {
 
-    private val loadTeachersEvent = SchoolViewEvents.LoadTeachersEvent(0, 5)
+    private val loadTeachersEvent = SchoolViewActions.LoadTeachersAction(0, 5)
     private lateinit var persons: AsyncData<List<Person>>
 
     @BeforeTest

@@ -12,22 +12,22 @@ data class AsyncData<T>(
     val status: AsyncDataStatus = AsyncDataStatus.INITIAL,
 )
 
-suspend fun <AsyncDataType, Event, Error> loadAsyncData(
+suspend fun <AsyncDataType, Action, Error> loadAsyncData(
     asyncData: AsyncData<AsyncDataType>,
-    event: Event,
-    loader: suspend (Event) -> Either<Error, AsyncDataType>,
+    action: Action,
+    loader: suspend (Action) -> Either<Error, AsyncDataType>,
 ): Flow<AsyncData<AsyncDataType>> = flow {
     setLoading(asyncData)
-    handleLoaderResult(asyncData.data, loader(event))
+    handleLoaderResult(asyncData.data, loader(action))
 }
 
-suspend fun <AsyncDataType, Event, Error> loadAsyncDataFlow(
+suspend fun <AsyncDataType, Action, Error> loadAsyncDataFlow(
     asyncData: AsyncData<AsyncDataType>,
-    event: Event,
-    loader: suspend (Event) -> Flow<Either<Error, AsyncDataType>>,
+    action: Action,
+    loader: suspend (Action) -> Flow<Either<Error, AsyncDataType>>,
 ): Flow<AsyncData<AsyncDataType>> = flow {
     setLoading(asyncData)
-    loader(event).collect {
+    loader(action).collect {
         handleLoaderResult(asyncData.data, it)
     }
 }
