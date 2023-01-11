@@ -9,6 +9,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
 import com.jeantuffier.statemachine.framework.AsyncData
+import com.jeantuffier.statemachine.framework.UiEvent
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -26,12 +27,14 @@ class ViewStateUpdaterGenerator(
             packageName = packageName,
             fileName = "${viewStateClass.simpleName.asString()}Extensions",
         ).apply {
-            val crossProperties = asyncCrossProperties(viewStateClass)
+            val crossAsyncProperties = asyncCrossProperties(viewStateClass)
+            val crossUiEventProperties = uiEventCrossProperties(logger, viewStateClass)
             addImport(MutableStateFlow::class.java.packageName, MutableStateFlow::class.java.simpleName)
             addImport("kotlinx.coroutines.flow", "update")
             addImport("com.jeantuffier.statemachine.framework", "loadAsyncData")
-            crossProperties.forEach { addFunction(loadFunction(it, viewStateClass.toClassName())) }
-            crossProperties.forEach { addFunction(updateFunction(it, viewStateClass.toClassName())) }
+            crossAsyncProperties.forEach { addFunction(loadFunction(it, viewStateClass.toClassName())) }
+            crossAsyncProperties.forEach { addFunction(updateFunction(it, viewStateClass.toClassName())) }
+            crossUiEventProperties.forEach { addFunction(onUiEvent(it, viewStateClass.toClassName())) }
         }.build()
 
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
@@ -46,6 +49,17 @@ private fun asyncCrossProperties(viewStateClass: KSClassDeclaration): List<KSPro
 private fun filterAsyncCrossProperties(property: KSPropertyDeclaration) =
     property.annotations.any { it.checkName(CrossStateProperty::class.qualifiedName) } &&
             property.type.resolve().toClassName() == AsyncData::class.asClassName()
+
+private fun uiEventCrossProperties(logger: KSPLogger, viewStateClass: KSClassDeclaration): List<KSPropertyDeclaration> =
+    viewStateClass.getDeclaredProperties()
+        .filter(::filterUiEventCrossProperties)
+        .toList()
+
+private fun filterUiEventCrossProperties(property: KSPropertyDeclaration): Boolean {
+    val propertyType = property.type.resolve()
+    return propertyType.toClassName() == List::class.asClassName() &&
+            propertyType.arguments.first().toTypeName() == UiEvent::class.asClassName()
+}
 
 private fun KSAnnotation.checkName(name: String?): Boolean =
     annotationType
@@ -102,6 +116,43 @@ private fun updateFunction(
         .receiver(receiver)
         .addParameter(ParameterSpec.builder("newValue", type).build())
         .addStatement("return update { it.copy($name = newValue) }")
+        .build()
+}
+
+private fun onUiEvent(
+    crossProperty: KSPropertyDeclaration,
+    viewStateClass: ClassName,
+): FunSpec {
+    val event = TypeVariableName("Event")
+    val mutableStateFlowType = ClassName(
+        MutableStateFlow::class.java.packageName,
+        MutableStateFlow::class.java.simpleName,
+    ).parameterizedBy(viewStateClass)
+    val name = crossProperty.simpleName.asString()
+    val type = crossProperty.type.resolve().arguments.first().toTypeName()
+    /*val loadLambda = LambdaTypeName.get(
+        parameters = arrayOf(event),
+        returnType = ClassName(Either::class.java.packageName, Either::class.java.simpleName)
+            .parameterizedBy(error, type)
+    ).copy(suspending = true)
+    return FunSpec.builder("load${name.capitalize()}")
+        .addModifiers(KModifier.SUSPEND)
+        .receiver(mutableStateFlowType)
+        .addTypeVariable(event)
+        .addTypeVariable(error)
+        .addParameter(ParameterSpec.builder("event", event).build())
+        .addParameter(
+            ParameterSpec.builder("loader", loadLambda)
+                .build()
+        )
+        .addStatement(
+            """
+            | loadAsyncData(value.$name, event, loader)
+            |     .collect(::update${name.capitalize()})
+        """.trimMargin()
+        )
+        .build()*/
+    return FunSpec.builder("load${name.capitalize()}")
         .build()
 }
 
