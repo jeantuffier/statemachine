@@ -19,6 +19,9 @@ data class SchoolViewState(
 
     @CrossStateProperty
     val students: AsyncData<List<Person>> = AsyncData(emptyList()),
+
+    @CrossStateProperty
+    val uiEvents: List<UiEvent> = emptyList()
 )
 
 @ViewActionsBuilder(

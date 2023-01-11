@@ -8,6 +8,7 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.jeantuffier.statemachine.annotation.CrossStateProperty
+import com.jeantuffier.statemachine.framework.AsyncData
 import com.squareup.kotlinpoet.*
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -21,18 +22,11 @@ class ViewStateUpdaterGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
     fun generateImplementation(viewStateClass: KSClassDeclaration, packageName: String) {
-        val fileName = "${viewStateClass.simpleName.asString()}Extensions"
-
-        val parameterizedFlow = ClassName(
-            MutableStateFlow::class.java.packageName,
-            MutableStateFlow::class.java.simpleName,
-        ).parameterizedBy(viewStateClass.toClassName())
-
         val fileSpec = FileSpec.builder(
             packageName = packageName,
-            fileName = fileName,
+            fileName = "${viewStateClass.simpleName.asString()}Extensions",
         ).apply {
-            val crossProperties = crossProperties(viewStateClass)
+            val crossProperties = asyncCrossProperties(viewStateClass)
             addImport(MutableStateFlow::class.java.packageName, MutableStateFlow::class.java.simpleName)
             addImport("kotlinx.coroutines.flow", "update")
             addImport("com.jeantuffier.statemachine.framework", "loadAsyncData")
@@ -44,16 +38,14 @@ class ViewStateUpdaterGenerator(
     }
 }
 
-private fun crossProperties(viewStateClass: KSClassDeclaration): List<KSPropertyDeclaration> {
-    val annotationType = CrossStateProperty::class
+private fun asyncCrossProperties(viewStateClass: KSClassDeclaration): List<KSPropertyDeclaration> =
+    viewStateClass.getDeclaredProperties()
+        .filter(::filterAsyncCrossProperties)
+        .toList()
 
-    return viewStateClass.getDeclaredProperties()
-        .filter { property ->
-            property.annotations.any {
-                it.checkName(annotationType.qualifiedName)
-            }
-        }.toList()
-}
+private fun filterAsyncCrossProperties(property: KSPropertyDeclaration) =
+    property.annotations.any { it.checkName(CrossStateProperty::class.qualifiedName) } &&
+            property.type.resolve().toClassName() == AsyncData::class.asClassName()
 
 private fun KSAnnotation.checkName(name: String?): Boolean =
     annotationType
