@@ -5,7 +5,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.jeantuffier.statemachine.annotation.ViewActionsBuilder
 import com.jeantuffier.statemachine.annotation.ViewState
-import com.jeantuffier.statemachine.processor.generator.ViewStateUpdaterGenerator
+import com.jeantuffier.statemachine.processor.generator.ViewStateExtensionsGenerator
 import com.jeantuffier.statemachine.processor.validator.ViewActionsBuilderValidator
 import com.jeantuffier.statemachine.processor.validator.ViewStateValidator
 import com.jeantuffier.statemachine.processor.visitor.ViewEventVisitor
@@ -62,7 +62,7 @@ private fun generateViewUpdaters(
 
     val annotations = resolver.symbolsWithAnnotations(annotationName)
     val validator = ViewStateValidator(environment.logger)
-    val visitor = ViewStateVisitor(ViewStateUpdaterGenerator(environment.logger, environment.codeGenerator))
+    val visitor = ViewStateVisitor(ViewStateExtensionsGenerator(environment.logger, environment.codeGenerator))
 
     val symbols = annotations.filter { validator.isValid(it) }
     symbols.forEach { it.accept(visitor, Unit) }

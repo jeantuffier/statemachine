@@ -2,10 +2,10 @@ package com.jeantuffier.statemachine.processor.visitor
 
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSVisitorVoid
-import com.jeantuffier.statemachine.processor.generator.ViewStateUpdaterGenerator
+import com.jeantuffier.statemachine.processor.generator.ViewStateExtensionsGenerator
 
 class ViewStateVisitor(
-    private val viewUpdaterGenerator: ViewStateUpdaterGenerator
+    private val viewUpdaterGenerator: ViewStateExtensionsGenerator
 ) : KSVisitorVoid() {
 
     override fun visitClassDeclaration(

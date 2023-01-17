@@ -35,6 +35,11 @@ sealed class SchoolViewActionsBuilder {
     object LoadSchoolData : SchoolViewActionsBuilder()
 }
 
+sealed class SchoolViewEvents {
+    object NavigateToStudents : SchoolViewEvents()
+    object NavigateToStaff : SchoolViewEvents()
+}
+
 private val schoolDataLoader: (
     SchoolViewState,
     SchoolViewActions.LoadSchoolData,

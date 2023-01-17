@@ -18,7 +18,7 @@ import com.squareup.kotlinpoet.ksp.writeTo
 import kotlinx.coroutines.flow.MutableStateFlow
 import java.util.*
 
-class ViewStateUpdaterGenerator(
+class ViewStateExtensionsGenerator(
     private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator,
 ) {
@@ -34,7 +34,10 @@ class ViewStateUpdaterGenerator(
             addImport("com.jeantuffier.statemachine.framework", "loadAsyncData")
             crossAsyncProperties.forEach { addFunction(loadFunction(it, viewStateClass.toClassName())) }
             crossAsyncProperties.forEach { addFunction(updateFunction(it, viewStateClass.toClassName())) }
-            crossUiEventProperties.forEach { addFunction(onUiEvent(it, viewStateClass.toClassName())) }
+            crossUiEventProperties.forEach {
+                addFunction(onUiEvent(it, viewStateClass.toClassName()))
+                addFunction(onUiEventHandled(it, viewStateClass.toClassName()))
+            }
         }.build()
 
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
@@ -129,13 +132,31 @@ private fun onUiEvent(
     ).parameterizedBy(viewStateClass)
     val name = crossProperty.simpleName.asString()
     return FunSpec.builder("on${name.capitalize()}")
-        .addModifiers(KModifier.SUSPEND)
         .receiver(mutableStateFlowType)
         .addParameter(
             ParameterSpec.builder("uiEvent", UiEvent::class.asTypeName())
                 .build()
         )
         .addStatement("return update { it.copy(uiEvents = value.uiEvents + uiEvent) }")
+        .build()
+}
+
+private fun onUiEventHandled(
+    crossProperty: KSPropertyDeclaration,
+    viewStateClass: ClassName,
+): FunSpec {
+    val mutableStateFlowType = ClassName(
+        MutableStateFlow::class.java.packageName,
+        MutableStateFlow::class.java.simpleName,
+    ).parameterizedBy(viewStateClass)
+    val name = crossProperty.simpleName.asString()
+    return FunSpec.builder("on${name.capitalize()}Handled")
+        .receiver(mutableStateFlowType)
+        .addParameter(
+            ParameterSpec.builder("uiEvent", UiEvent::class.asTypeName())
+                .build()
+        )
+        .addStatement("return update { state -> state.copy(uiEvents = value.uiEvents.filterNot { it.id == uiEvent.id }) }")
         .build()
 }
 
