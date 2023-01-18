@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.jeantuffier"
-version = "2.1.0-beta1"
+version = "2.1.0-beta2"
 
 repositories {
     google()

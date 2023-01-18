@@ -75,7 +75,7 @@ private fun loadFunction(
     crossProperty: KSPropertyDeclaration,
     viewStateClass: ClassName,
 ): FunSpec {
-    val event = TypeVariableName("Event")
+    val action = TypeVariableName("Action")
     val error = TypeVariableName("Error")
     val mutableStateFlowType = ClassName(
         MutableStateFlow::class.java.packageName,
@@ -84,23 +84,23 @@ private fun loadFunction(
     val name = crossProperty.simpleName.asString()
     val type = crossProperty.type.resolve().arguments.first().toTypeName()
     val loadLambda = LambdaTypeName.get(
-        parameters = arrayOf(event),
+        parameters = arrayOf(action),
         returnType = ClassName(Either::class.java.packageName, Either::class.java.simpleName)
             .parameterizedBy(error, type)
     ).copy(suspending = true)
     return FunSpec.builder("load${name.capitalize()}")
         .addModifiers(KModifier.SUSPEND)
         .receiver(mutableStateFlowType)
-        .addTypeVariable(event)
+        .addTypeVariable(action)
         .addTypeVariable(error)
-        .addParameter(ParameterSpec.builder("event", event).build())
+        .addParameter(ParameterSpec.builder("action", action).build())
         .addParameter(
             ParameterSpec.builder("loader", loadLambda)
                 .build()
         )
         .addStatement(
             """
-            | loadAsyncData(value.$name, event, loader)
+            | loadAsyncData(value.$name, action, loader)
             |     .collect(::update${name.capitalize()})
         """.trimMargin()
         )
@@ -131,13 +131,23 @@ private fun onUiEvent(
         MutableStateFlow::class.java.simpleName,
     ).parameterizedBy(viewStateClass)
     val name = crossProperty.simpleName.asString()
+    val action = TypeVariableName("Action")
+    val factoryLambda = LambdaTypeName.get(
+        parameters = arrayOf(action),
+        returnType = UiEvent::class.asTypeName().copy(nullable = true),
+    )
     return FunSpec.builder("on${name.capitalize()}")
         .receiver(mutableStateFlowType)
+        .addTypeVariable(action)
         .addParameter(
-            ParameterSpec.builder("uiEvent", UiEvent::class.asTypeName())
+            ParameterSpec.builder("action", action)
                 .build()
         )
-        .addStatement("return update { it.copy(uiEvents = value.uiEvents + uiEvent) }")
+        .addParameter(
+            ParameterSpec.builder("factory", factoryLambda)
+                .build()
+        )
+        .addStatement("return factory(action)?.let { uiEvent -> update { it.copy(uiEvents = value.uiEvents + uiEvent) } } ?: Unit")
         .build()
 }
 

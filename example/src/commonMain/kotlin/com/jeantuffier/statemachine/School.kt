@@ -33,11 +33,13 @@ data class SchoolViewState(
 )
 sealed class SchoolViewActionsBuilder {
     object LoadSchoolData : SchoolViewActionsBuilder()
+    object ClickedOnStudent : SchoolViewActionsBuilder()
+    object ClickedOnTeacher : SchoolViewActionsBuilder()
 }
 
-sealed class SchoolViewEvents {
-    object NavigateToStudents : SchoolViewEvents()
-    object NavigateToStaff : SchoolViewEvents()
+sealed class SchoolViewEvents : UiEvent {
+    class NavigateToStudents(override val id: String) : SchoolViewEvents()
+    class NavigateToStaff(override val id: String) : SchoolViewEvents()
 }
 
 private val schoolDataLoader: (
@@ -53,11 +55,13 @@ class SchoolStateMachine internal constructor(
 ) : StateMachine<SchoolViewState, SchoolViewActions> by StateMachineBuilder(
     initialValue = SchoolViewState(),
     scope = scope,
-    reducer = { state, event ->
-        when (event) {
-            is SchoolViewActions.LoadSchoolData -> state.update { dataLoader(state.value, event) }
-            is SchoolViewActions.LoadStudentsAction -> state.loadStudents(event, studentLoader)
-            is SchoolViewActions.LoadTeachersAction -> state.loadTeachers(event, teacherLoader)
+    reducer = { state, action ->
+        when (action) {
+            is SchoolViewActions.LoadSchoolData -> state.update { dataLoader(state.value, action) }
+            is SchoolViewActions.LoadStudentsAction -> state.loadStudents(action, studentLoader)
+            is SchoolViewActions.LoadTeachersAction -> state.loadTeachers(action, teacherLoader)
+            is SchoolViewActions.ClickedOnStudent -> state.onUiEvents(action, ::uiEvenFactory)
+            is SchoolViewActions.ClickedOnTeacher -> state.onUiEvents(action, ::uiEvenFactory)
         }
     }
 ) {
@@ -69,4 +73,10 @@ class SchoolStateMachine internal constructor(
             scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
         ) = SchoolStateMachine(loadSchoolData, loadStudent, loadTeacher, scope)
     }
+}
+
+private fun uiEvenFactory(action: SchoolViewActions) = when(action) {
+    is SchoolViewActions.ClickedOnStudent -> SchoolViewEvents.NavigateToStudents("1")
+    is SchoolViewActions.ClickedOnTeacher -> SchoolViewEvents.NavigateToStaff("2")
+    else -> null
 }
