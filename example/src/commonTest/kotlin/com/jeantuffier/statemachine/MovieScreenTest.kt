@@ -2,7 +2,6 @@ package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
 import arrow.core.Either
-import com.jeantuffier.statemachine.core.StateMachine
 import com.jeantuffier.statemachine.orchestrate.Available
 import com.jeantuffier.statemachine.orchestrate.Limit
 import com.jeantuffier.statemachine.orchestrate.Offset
@@ -17,6 +16,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
+import kotlin.coroutines.CoroutineContext
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -30,7 +30,7 @@ class MovieScreenTest {
 
     @Test
     fun shouldBeInitialState() = testScope.runTest {
-        defaultStateMachine().state.test {
+        defaultStateMachine(coroutineContext = testDispatcher).state.test {
             assertEquals(MovieScreenState(), awaitItem())
             expectNoEvents()
         }
@@ -38,7 +38,7 @@ class MovieScreenTest {
 
     @Test
     fun shouldLoadData() = testScope.runTest {
-        val defaultStateMachine = defaultStateMachine()
+        val defaultStateMachine = defaultStateMachine(coroutineContext = testDispatcher)
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
 
@@ -82,6 +82,7 @@ class MovieScreenTest {
     fun shouldFailToLoadMovie() = testScope.runTest {
         val defaultStateMachine = defaultStateMachine(
             movie = { _ -> Either.Left(AppError.SomeRandomError) },
+            coroutineContext = testDispatcher,
         )
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
@@ -124,6 +125,7 @@ class MovieScreenTest {
     fun shouldFailToLoadActors() = testScope.runTest {
         val defaultStateMachine = defaultStateMachine(
             actors = { _ -> Either.Left(AppError.SomeRandomError) },
+            coroutineContext = testDispatcher,
         )
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
@@ -161,7 +163,7 @@ class MovieScreenTest {
 
     @Test
     fun shouldLoadComments() = testScope.runTest {
-        val defaultStateMachine = defaultStateMachine()
+        val defaultStateMachine = defaultStateMachine(coroutineContext = testDispatcher)
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
 
@@ -189,6 +191,7 @@ class MovieScreenTest {
     fun shouldFailToLoadComments() = testScope.runTest {
         val defaultStateMachine = defaultStateMachine(
             comments = { _ -> flowOf(Either.Left(AppError.SomeRandomError)) },
+            coroutineContext = testDispatcher,
         )
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
@@ -210,7 +213,7 @@ class MovieScreenTest {
 
     @Test
     fun saveAsFavoriteShouldSucceed() = testScope.runTest {
-        val defaultStateMachine = defaultStateMachine()
+        val defaultStateMachine = defaultStateMachine(coroutineContext = testDispatcher)
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
 
@@ -233,7 +236,8 @@ class MovieScreenTest {
     @Test
     fun saveAsFavoriteShouldFail() = testScope.runTest {
         val defaultStateMachine = defaultStateMachine(
-            saveAsFavorite = { Either.Left(AppError.SomeRandomError) }
+            saveAsFavorite = { Either.Left(AppError.SomeRandomError) },
+            coroutineContext = testDispatcher,
         )
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
@@ -252,11 +256,7 @@ class MovieScreenTest {
 
     @Test
     fun handleSideEffectShouldSucceed() = testScope.runTest {
-        val defaultStateMachine = defaultStateMachine(
-            initialValue = MovieScreenState(
-                sideEffects = listOf()
-            )
-        )
+        val defaultStateMachine = defaultStateMachine(coroutineContext = testDispatcher)
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
 
@@ -273,7 +273,6 @@ class MovieScreenTest {
     }
 
     private fun defaultStateMachine(
-        initialValue: MovieScreenState = MovieScreenState(),
         movie: OrchestratedUpdate<LoadData, AppError, Movie> = OrchestratedUpdate {
             Either.Right(
                 Movie(
@@ -316,15 +315,13 @@ class MovieScreenTest {
         saveAsFavorite: OrchestratedSideEffect<SaveAsFavorite, AppError> = OrchestratedSideEffect {
             delay(100)
             Either.Right(Unit)
-        }
-    ) = StateMachine(
-        initialValue = initialValue,
-        coroutineContext = testDispatcher,
-        reducer = movieScreenReducer(
-            movie,
-            actors,
-            comments,
-            saveAsFavorite,
-        ),
+        },
+        coroutineContext: CoroutineContext,
+    ) = movieScreenStateMachine(
+        movie,
+        actors,
+        comments,
+        saveAsFavorite,
+        coroutineContext,
     )
 }

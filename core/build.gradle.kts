@@ -5,7 +5,7 @@ plugins {
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.1.0"
+version = "0.1.0-dev5"
 
 repositories {
     google()
