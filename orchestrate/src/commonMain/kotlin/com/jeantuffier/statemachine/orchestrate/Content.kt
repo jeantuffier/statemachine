@@ -1,5 +1,6 @@
 package com.jeantuffier.statemachine.orchestrate
 
+import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
 data class Content<T>(
@@ -15,6 +16,7 @@ data class PagingContent<T>(
 
 fun <T> PagingContent<T>.hasLoadedEverything() = items.isNotEmpty() && available.value == items.size
 
+@Serializable
 data class Page<T>(
     val offset: Offset = Offset(0),
     val limit: Limit = Limit(0),
@@ -23,10 +25,13 @@ data class Page<T>(
 )
 
 @JvmInline
+@Serializable
 value class Offset(val value: Int)
 
 @JvmInline
+@Serializable
 value class Limit(val value: Int)
 
 @JvmInline
+@Serializable
 value class Available(val value: Int)

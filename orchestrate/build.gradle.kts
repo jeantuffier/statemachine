@@ -2,10 +2,11 @@ plugins {
     kotlin("multiplatform")
     id("maven-publish")
     id("com.rickclephas.kmp.nativecoroutines")
+    kotlin("plugin.serialization")
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.1.0"
+version = "0.1.0-dev5"
 
 repositories {
     google()
@@ -48,6 +49,7 @@ kotlin {
             dependencies {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
                 implementation("io.arrow-kt:arrow-core:1.1.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.0")
             }
         }
         val commonTest by getting {

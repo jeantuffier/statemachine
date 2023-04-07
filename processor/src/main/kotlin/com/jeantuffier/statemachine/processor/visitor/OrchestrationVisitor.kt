@@ -8,6 +8,7 @@ import com.jeantuffier.statemachine.processor.generator.ReducerGenerator
 import com.jeantuffier.statemachine.processor.generator.SideEffectGenerator
 import com.jeantuffier.statemachine.processor.generator.ActionsGenerator
 import com.jeantuffier.statemachine.processor.generator.StateGenerator
+import com.jeantuffier.statemachine.processor.generator.StateMachineGenerator
 
 class OrchestrationVisitor(
     environment: SymbolProcessorEnvironment,
@@ -18,6 +19,7 @@ class OrchestrationVisitor(
     private val helpersGenerator = HelpersGenerator(environment.logger, environment.codeGenerator)
     private val reducerGenerator = ReducerGenerator(environment.logger, environment.codeGenerator)
     private val sideEffectGenerator = SideEffectGenerator(environment.logger, environment.codeGenerator)
+    private val stateMachineGenerator = StateMachineGenerator(environment.logger, environment.codeGenerator)
 
     override fun visitClassDeclaration(
         classDeclaration: KSClassDeclaration,
@@ -28,5 +30,6 @@ class OrchestrationVisitor(
         sideEffectGenerator.generateSideEffects(classDeclaration)
         helpersGenerator.generateHelpers(classDeclaration)
         reducerGenerator.generateReducer(classDeclaration)
+        stateMachineGenerator.generateStateMachine((classDeclaration))
     }
 }

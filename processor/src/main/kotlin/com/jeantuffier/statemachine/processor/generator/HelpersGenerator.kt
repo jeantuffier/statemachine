@@ -83,7 +83,7 @@ class HelpersGenerator(
                 )
             }
 
-            addFunction(onSideEffectHandled(viewStateClassName))
+            addFunction(onSideEffectHandled(viewStateClassName, baseName))
 
         }.build()
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
@@ -229,8 +229,11 @@ private fun updateStatement(property: KSPropertyDeclaration): String =
         else -> throw IllegalStateException()
     }
 
-private fun onSideEffectHandled(viewStateClass: ClassName): FunSpec {
-    return FunSpec.builder("onSideEffectHandled")
+private fun onSideEffectHandled(
+    viewStateClass: ClassName,
+    baseName: String,
+): FunSpec {
+    return FunSpec.builder("on${baseName}SideEffectHandled")
         .addParameter(
             ParameterSpec.builder("sideEffect", SideEffect::class.asTypeName())
                 .build()

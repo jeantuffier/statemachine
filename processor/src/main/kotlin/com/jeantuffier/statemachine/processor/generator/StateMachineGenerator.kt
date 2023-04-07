@@ -6,6 +6,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.jeantuffier.statemachine.core.Reducer
+import com.jeantuffier.statemachine.core.StateMachine
 import com.jeantuffier.statemachine.orchestrate.Content
 import com.jeantuffier.statemachine.orchestrate.Orchestrated
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
@@ -22,14 +23,14 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
-import java.lang.StringBuilder
+import kotlin.coroutines.CoroutineContext
 
-class ReducerGenerator(
+class StateMachineGenerator(
     private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator
 ) {
 
-    fun generateReducer(classDeclaration: KSClassDeclaration) {
+    fun generateStateMachine(classDeclaration: KSClassDeclaration) {
         val packageName = classDeclaration.packageName.asString()
         val annotation = classDeclaration.annotations.first {
             it.shortName.asString() == Orchestration::class.asClassName().simpleName
@@ -37,32 +38,34 @@ class ReducerGenerator(
         val baseName = annotation.arguments.first().value as String
         val stateClass = "${baseName}State"
         val actionClass = "${baseName}Action"
-        val functionName = "${baseName}Reducer"
-        val fileName = functionName.replaceFirstChar(Char::uppercaseChar)
+        val functionName = "${baseName}StateMachine"
 
         val actionClassType = ClassName(packageName, actionClass)
         val stateClassType = ClassName(packageName, stateClass)
-        val returnType = Reducer::class.asClassName().parameterizedBy(actionClassType, stateClassType)
-
+        val returnType = StateMachine::class.asClassName().parameterizedBy(actionClassType, stateClassType)
 
         val error = classDeclaration.annotations.first().arguments[1].value as KSType
 
-        val fileSpec = FileSpec.builder(packageName, fileName).apply {
-            addImport("kotlinx.coroutines.flow", "map")
-            addImport("kotlinx.coroutines.flow", "merge")
+        val fileSpec = FileSpec.builder(packageName, functionName).apply {
+            addImport("com.jeantuffier.statemachine.core", "StateMachine")
             addFunction(
                 FunSpec.builder(functionName.replaceFirstChar(Char::lowercaseChar))
                     .addParameters(orchestratedParameters(classDeclaration, error.toClassName()))
                     .addParameters(sideEffectParameters(classDeclaration, error.toClassName()))
+                    .addParameter(
+                        ParameterSpec.builder("coroutineContext", CoroutineContext::class.asClassName())
+                            .build()
+                    )
                     .returns(returnType)
                     .addStatement(
                         """
-                            return Reducer { action ->
-                                when(action) {
-                                    ${reducerStatements(classDeclaration, actionClassType).joinToString("\n")}
-                                    is ${actionClassType.simpleName}.SideEffectHandled -> on${baseName}SideEffectHandled(action.sideEffect)
-                                }
-                            }
+                            return StateMachine(
+                                initialValue = $stateClass(),
+                                coroutineContext = coroutineContext,
+                                reducer = ${baseName.replaceFirstChar(Char::lowercaseChar)}Reducer(
+                                    ${stateMachineReducerParameter(classDeclaration).joinToString(",\n")}
+                                )
+                            )
                         """.trimIndent()
                     )
                     .build()
@@ -175,4 +178,16 @@ class ReducerGenerator(
 
     private fun KSType.lowerCaseSimpleName(): String =
         toClassName().simpleName.replaceFirstChar(Char::lowercaseChar)
+
+    private fun stateMachineReducerParameter(classDeclaration: KSClassDeclaration): List<String> {
+        val orchestratedProperties = classDeclaration.getAllProperties()
+            .filter(::isOrchestratedProperty)
+            .map { it.simpleName.asString() }
+            .toList()
+        val sideEffects = classDeclaration.annotations.first().arguments[2].value as List<KSType>
+
+        return orchestratedProperties + sideEffects.map {
+            it.toClassName().simpleName.replaceFirstChar(Char::lowercaseChar)
+        }
+    }
 }

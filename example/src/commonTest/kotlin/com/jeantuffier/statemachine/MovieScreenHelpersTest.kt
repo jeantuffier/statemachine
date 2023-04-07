@@ -210,7 +210,7 @@ class MovieScreenHelpersTest {
             assertEquals(1, next.sideEffects.size)
             assertTrue(next.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)
 
-            next = onSideEffectHandled(next.sideEffects.first()).first()(next)
+            next = onMovieScreenSideEffectHandled(next.sideEffects.first()).first()(next)
 
             next = awaitItem()(next)
             assertEquals(1, next.sideEffects.size)
@@ -234,7 +234,7 @@ class MovieScreenHelpersTest {
             assertEquals(1, next.sideEffects.size)
             assertTrue(next.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)
 
-            next = onSideEffectHandled(next.sideEffects.first()).first()(next)
+            next = onMovieScreenSideEffectHandled(next.sideEffects.first()).first()(next)
 
             next = awaitItem()(next)
             assertEquals(1, next.sideEffects.size)
@@ -248,7 +248,7 @@ class MovieScreenHelpersTest {
     fun handleSideEffectShouldSucceed() = runTest {
         val sideEffect = MovieScreenSideEffects.WaitingForSaveAsFavorite(1)
         var next = MovieScreenState(sideEffects = listOf(sideEffect))
-        onSideEffectHandled(sideEffect).test {
+        onMovieScreenSideEffectHandled(sideEffect).test {
             next = awaitItem()(next)
             assertTrue(next.sideEffects.isEmpty())
             awaitComplete()
