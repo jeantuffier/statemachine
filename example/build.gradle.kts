@@ -1,10 +1,11 @@
 plugins {
     kotlin("multiplatform")
     id("com.google.devtools.ksp")
+    id("org.jmailen.kotlinter")
 }
 
 group = "com.jeantuffier"
-version = "0.1.0-dev5"
+version = "0.2.0-dev1"
 
 repositories {
     google()
@@ -83,4 +84,5 @@ tasks.named("build") {
 
 tasks.named("compileKotlinJvm") {
     dependsOn(tasks.named("kspCommonMainKotlinMetadata"))
+    dependsOn(tasks.named("formatKotlinGeneratedByKspCommonMainKotlinMetadata"))
 }

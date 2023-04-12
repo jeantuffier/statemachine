@@ -116,7 +116,7 @@ class StateMachineTest {
                 onLoadMovie = { _ -> flowOf() },
                 onLoadActors = { _ -> flowOf() },
                 onLoadComments = { _ -> flowOf() },
-            )
+            ),
         ).state.test {
             assertEquals(MovieScreenState(), awaitItem())
         }
@@ -137,7 +137,7 @@ class StateMachineTest {
                 },
                 onLoadActors = { _ -> flowOf() },
                 onLoadComments = { _ -> flowOf() },
-            )
+            ),
         )
         movieScreen.state.test {
             assertEquals(MovieScreenState(), awaitItem())
@@ -169,7 +169,7 @@ class StateMachineTest {
                     }
                 },
                 onLoadComments = { _ -> flowOf() },
-            )
+            ),
         )
         movieScreen.state.test {
             assertEquals(MovieScreenState(), awaitItem())
@@ -188,7 +188,7 @@ class StateMachineTest {
                     Actor("2", "actor2", "actor2"),
                     Actor("3", "actor3", "actor3"),
                 ),
-                next.actors
+                next.actors,
             )
         }
     }

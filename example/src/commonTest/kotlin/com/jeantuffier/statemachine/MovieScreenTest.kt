@@ -72,7 +72,7 @@ class MovieScreenTest {
                     Actor("actor2", "actor2"),
                     Actor("actor3", "actor3"),
                 ),
-                next.actors.items
+                next.actors.items,
             )
             assertTrue(next.actors.hasLoadedEverything())
         }
@@ -115,7 +115,7 @@ class MovieScreenTest {
                     Actor("actor2", "actor2"),
                     Actor("actor3", "actor3"),
                 ),
-                next.actors.items
+                next.actors.items,
             )
             assertTrue(next.actors.hasLoadedEverything())
         }
@@ -181,7 +181,7 @@ class MovieScreenTest {
                     Comment("comment2", "content2"),
                     Comment("comment3", "content3"),
                 ),
-                next.comments.items
+                next.comments.items,
             )
             assertTrue(next.comments.hasLoadedEverything())
         }
@@ -277,8 +277,8 @@ class MovieScreenTest {
             Either.Right(
                 Movie(
                     "1",
-                    "Movie1"
-                )
+                    "Movie1",
+                ),
             )
         },
         actors: OrchestratedUpdate<LoadData, AppError, Page<Actor>> = OrchestratedUpdate {
@@ -292,7 +292,7 @@ class MovieScreenTest {
                         Actor("actor2", "actor2"),
                         Actor("actor3", "actor3"),
                     ),
-                )
+                ),
             )
         },
         comments: OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> = OrchestratedFlowUpdate {
@@ -308,8 +308,8 @@ class MovieScreenTest {
                             Comment("comment3", "content3"),
                         ),
 
-                        )
-                )
+                    ),
+                ),
             )
         },
         saveAsFavorite: OrchestratedSideEffect<SaveAsFavorite, AppError> = OrchestratedSideEffect {

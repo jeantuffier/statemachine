@@ -9,7 +9,7 @@ import com.jeantuffier.statemachine.orchestrate.PagingContent
 @Orchestration(
     baseName = "MovieScreen",
     errorType = AppError::class,
-    sideEffects = [SaveAsFavorite::class]
+    sideEffects = [SaveAsFavorite::class],
 )
 interface MovieScreenOrchestration {
     @Orchestrated(

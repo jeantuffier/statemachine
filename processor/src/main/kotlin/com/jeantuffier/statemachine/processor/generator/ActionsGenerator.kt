@@ -28,7 +28,7 @@ import com.squareup.kotlinpoet.ksp.writeTo
 
 class ActionsGenerator(
     private val logger: KSPLogger,
-    private val codeGenerator: CodeGenerator
+    private val codeGenerator: CodeGenerator,
 ) {
 
     fun generateActions(classDeclaration: KSClassDeclaration) {
@@ -112,7 +112,9 @@ class ActionsGenerator(
         val superInterface = if (typeVariables.isNotEmpty()) {
             typeVariables.forEach { builder.addTypeVariable(it) }
             baseSuperInterface.parameterizedBy(typeVariables)
-        } else baseSuperInterface
+        } else {
+            baseSuperInterface
+        }
         builder.addSuperinterface(superInterface)
 
         return builder.build()
@@ -135,7 +137,7 @@ class ActionsGenerator(
 
     private fun properties(
         constructorParameters: List<KSPropertyDeclaration>,
-        isAction: Boolean
+        isAction: Boolean,
     ): List<PropertySpec> =
         constructorParameters.map { constructorParameter ->
             val name = constructorParameter.toString()

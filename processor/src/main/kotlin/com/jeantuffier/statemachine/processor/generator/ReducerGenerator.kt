@@ -26,7 +26,7 @@ import java.lang.StringBuilder
 
 class ReducerGenerator(
     private val logger: KSPLogger,
-    private val codeGenerator: CodeGenerator
+    private val codeGenerator: CodeGenerator,
 ) {
 
     fun generateReducer(classDeclaration: KSClassDeclaration) {
@@ -44,11 +44,9 @@ class ReducerGenerator(
         val stateClassType = ClassName(packageName, stateClass)
         val returnType = Reducer::class.asClassName().parameterizedBy(actionClassType, stateClassType)
 
-
         val error = classDeclaration.annotations.first().arguments[1].value as KSType
 
         val fileSpec = FileSpec.builder(packageName, fileName).apply {
-            addImport("kotlinx.coroutines.flow", "map")
             addImport("kotlinx.coroutines.flow", "merge")
             addFunction(
                 FunSpec.builder(functionName.replaceFirstChar(Char::lowercaseChar))
@@ -59,13 +57,13 @@ class ReducerGenerator(
                         """
                             return Reducer { action ->
                                 when(action) {
-                                    ${reducerStatements(classDeclaration, actionClassType).joinToString("\n")}
+                                    ${reducerStatements(classDeclaration, baseName, actionClassType).joinToString("\n")}
                                     is ${actionClassType.simpleName}.SideEffectHandled -> on${baseName}SideEffectHandled(action.sideEffect)
                                 }
                             }
-                        """.trimIndent()
+                        """.trimIndent(),
                     )
-                    .build()
+                    .build(),
             )
         }.build()
 
@@ -128,6 +126,7 @@ class ReducerGenerator(
 
     private fun reducerStatements(
         classDeclaration: KSClassDeclaration,
+        baseName: String,
         actionClass: ClassName,
     ): List<String> {
         val contentStatements = classDeclaration.getAllProperties()
@@ -136,7 +135,7 @@ class ReducerGenerator(
                 val type = it.annotations.first().arguments[0].value as KSType
                 type.toClassName()
             }.map {
-                orchestratedStatement(actionClass, it)
+                orchestratedStatement(actionClass, baseName, it)
             }
         val sideEffects = classDeclaration.annotations.first().arguments[2].value as List<KSType>
         val sideEffectStatements = sideEffects.map {
@@ -150,6 +149,7 @@ class ReducerGenerator(
 
     private fun orchestratedStatement(
         actionClass: ClassName,
+        baseName: String,
         entry: Map.Entry<ClassName, List<KSPropertyDeclaration>>,
     ): String {
         val (trigger, properties) = entry
@@ -160,7 +160,7 @@ class ReducerGenerator(
             }
             properties.forEach {
                 val functionName = it.simpleName.asString().replaceFirstChar(Char::uppercaseChar)
-                append("load${functionName}(action, ${it.simpleName.asString()})")
+                append("load$baseName$functionName(action, ${it.simpleName.asString()})")
                 if (properties.size > 1) {
                     append(",")
                 }

@@ -21,7 +21,7 @@ import com.squareup.kotlinpoet.ksp.writeTo
 
 class SideEffectGenerator(
     private val logger: KSPLogger,
-    private val codeGenerator: CodeGenerator
+    private val codeGenerator: CodeGenerator,
 ) {
 
     fun generateSideEffects(classDeclaration: KSClassDeclaration) {
@@ -44,16 +44,16 @@ class SideEffectGenerator(
                         .primaryConstructor(
                             FunSpec.constructorBuilder()
                                 .addParameter("id", Long::class)
-                                .build()
+                                .build(),
                         )
                         .addProperty(
                             PropertySpec.builder("id", Long::class)
                                 .addModifiers(KModifier.OVERRIDE)
                                 .initializer("id")
-                                .build()
+                                .build(),
                         )
                         .superclass(ClassName(packageName, fileName))
-                        .build()
+                        .build(),
                 )
             }
         val sideEffects = classDeclaration.annotations.first().arguments[2].value as List<KSType>
@@ -63,16 +63,16 @@ class SideEffectGenerator(
                     .primaryConstructor(
                         FunSpec.constructorBuilder()
                             .addParameter("id", Long::class)
-                            .build()
+                            .build(),
                     )
                     .addProperty(
                         PropertySpec.builder("id", Long::class)
                             .addModifiers(KModifier.OVERRIDE)
                             .initializer("id")
-                            .build()
+                            .build(),
                     )
                     .superclass(ClassName(packageName, fileName))
-                    .build()
+                    .build(),
             )
             listOf("Succeeded", "Failed").forEach { status ->
                 builder.addType(
@@ -80,16 +80,16 @@ class SideEffectGenerator(
                         .primaryConstructor(
                             FunSpec.constructorBuilder()
                                 .addParameter("id", Long::class)
-                                .build()
+                                .build(),
                         )
                         .addProperty(
                             PropertySpec.builder("id", Long::class)
                                 .addModifiers(KModifier.OVERRIDE)
                                 .initializer("id")
-                                .build()
+                                .build(),
                         )
                         .superclass(ClassName(packageName, fileName))
-                        .build()
+                        .build(),
                 )
             }
         }

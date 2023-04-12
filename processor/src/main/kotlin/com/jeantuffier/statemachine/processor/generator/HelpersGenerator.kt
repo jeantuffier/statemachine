@@ -62,10 +62,11 @@ class HelpersGenerator(
                     addFunction(
                         loadFunction(
                             property,
+                            baseName,
                             viewStateClassName,
                             errorClassName,
-                            logger
-                        )
+                            logger,
+                        ),
                     )
                 }
 
@@ -78,13 +79,12 @@ class HelpersGenerator(
                         viewStateClassName,
                         errorClassName,
                         baseName,
-                        logger
-                    )
+                        logger,
+                    ),
                 )
             }
 
             addFunction(onSideEffectHandled(viewStateClassName, baseName))
-
         }.build()
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
     }
@@ -92,6 +92,7 @@ class HelpersGenerator(
 
 private fun loadFunction(
     orchestratedProperty: KSPropertyDeclaration,
+    baseName: String,
     viewStateClass: ClassName,
     errorClass: ClassName,
     logger: KSPLogger,
@@ -116,13 +117,13 @@ private fun loadFunction(
     }
     val orchestrator = orchestratorType.parameterizedBy(trigger.toClassName(), errorClass, orchestrationType)
 
-    val builder = FunSpec.builder("load${name.replaceFirstChar(Char::uppercase)}")
-        .addModifiers(KModifier.SUSPEND)
+    val builder = FunSpec.builder("load$baseName${name.replaceFirstChar(Char::uppercase)}")
+        .addModifiers(KModifier.SUSPEND, KModifier.INTERNAL)
         .returns(returnType)
         .addParameter(ParameterSpec.builder("input", input.toTypeName()).build())
         .addParameter(
             ParameterSpec.builder("orchestrator", orchestrator)
-                .build()
+                .build(),
         )
 
     val orchestration = when {
@@ -154,7 +155,7 @@ private fun loadFunction(
                     }
                 }
             }
-        """.trimMargin()
+        """.trimMargin(),
     )
 
     return builder.build()
@@ -179,7 +180,7 @@ private fun sideEffectFunction(
         .addParameter(ParameterSpec.builder("input", trigger).build())
         .addParameter(
             ParameterSpec.builder("orchestrator", orchestrator)
-                .build()
+                .build(),
         )
 
     builder.addStatement(
@@ -204,7 +205,7 @@ private fun sideEffectFunction(
                     }
                 }
             }
-        """.trimMargin()
+        """.trimMargin(),
     )
 
     return builder.build()
@@ -219,7 +220,9 @@ private fun KSPropertyDeclaration.isPagingContent(): Boolean =
 private fun updateAvailability(property: KSPropertyDeclaration): String {
     return if (property.isPagingContent()) {
         "available = newValue.data.available,"
-    } else ""
+    } else {
+        ""
+    }
 }
 
 private fun updateStatement(property: KSPropertyDeclaration): String =
@@ -236,7 +239,7 @@ private fun onSideEffectHandled(
     return FunSpec.builder("on${baseName}SideEffectHandled")
         .addParameter(
             ParameterSpec.builder("sideEffect", SideEffect::class.asTypeName())
-                .build()
+                .build(),
         )
         .addStatement(
             """
@@ -245,7 +248,7 @@ private fun onSideEffectHandled(
                         state.copy(sideEffects = state.sideEffects.filterNot { it.id == sideEffect.id })
                     }
                 )
-            """.trimIndent()
+            """.trimIndent(),
         )
         .build()
 }

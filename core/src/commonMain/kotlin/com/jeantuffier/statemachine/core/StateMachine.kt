@@ -1,7 +1,10 @@
 package com.jeantuffier.statemachine.core
 
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutineScope
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.produce
@@ -10,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlin.coroutines.CoroutineContext
 
 /**
@@ -82,7 +86,7 @@ fun <Input, Output> StateMachine(
     initialValue: Output,
     coroutineContext: CoroutineContext,
     reducer: Reducer<Input, Output>,
-    stateMachineConfig: StateMachineConfig = StateMachineConfig()
+    stateMachineConfig: StateMachineConfig = StateMachineConfig(),
 ) = object : StateMachine<Input, Output> {
 
     private val job = SupervisorJob()
@@ -114,7 +118,7 @@ fun <Input, Output> StateMachine(
         }
 
     private fun CoroutineScope.launchStateUpdateProcessor(
-        channel: ReceiveChannel<StateUpdate<Output>>
+        channel: ReceiveChannel<StateUpdate<Output>>,
     ) = launch {
         for (stateUpdate in channel) {
             _state.update { stateUpdate(state.value) }

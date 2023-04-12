@@ -2,7 +2,6 @@ package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
 import arrow.core.Either
-import arrow.core.left
 import com.jeantuffier.statemachine.orchestrate.Available
 import com.jeantuffier.statemachine.orchestrate.Content
 import com.jeantuffier.statemachine.orchestrate.Limit
@@ -31,7 +30,7 @@ class MovieScreenReducerTest {
             state = awaitItem()(state)
             assertEquals(
                 MovieScreenState(movie = Content(isLoading = true)),
-                state
+                state,
             )
 
             state = awaitItem()(state)
@@ -40,9 +39,9 @@ class MovieScreenReducerTest {
                     movie = Content(
                         isLoading = false,
                         value = Movie(id = "1", title = "Movie1"),
-                    )
+                    ),
                 ),
-                state
+                state,
             )
 
             state = awaitItem()(state)
@@ -96,7 +95,7 @@ class MovieScreenReducerTest {
             state = awaitItem()(state)
             assertEquals(
                 MovieScreenState(movie = Content(isLoading = true)),
-                state
+                state,
             )
 
             state = awaitItem()(state)
@@ -105,7 +104,7 @@ class MovieScreenReducerTest {
                     isLoading = false,
                     value = null,
                 ),
-                state.movie
+                state.movie,
             )
             assertEquals(1, state.sideEffects.size)
             assertTrue(state.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadMovie)
@@ -167,7 +166,7 @@ class MovieScreenReducerTest {
             state = awaitItem()(state)
             assertEquals(
                 MovieScreenState(movie = Content(isLoading = true)),
-                state
+                state,
             )
 
             state = awaitItem()(state)
@@ -176,7 +175,7 @@ class MovieScreenReducerTest {
                     isLoading = false,
                     value = Movie(id = "1", title = "Movie1"),
                 ),
-                state.movie
+                state.movie,
             )
 
             state = awaitItem()(state)
@@ -256,7 +255,7 @@ class MovieScreenReducerTest {
     @Test
     fun loadCommentsShouldFail() = runTest {
         val reducer = createReducer(
-            comments = { flowOf(Either.Left(AppError.SomeRandomError)) }
+            comments = { flowOf(Either.Left(AppError.SomeRandomError)) },
         )
         val input = MovieScreenAction.LoadComments("1", 0, 3)
         var state = MovieScreenState()
@@ -331,7 +330,7 @@ class MovieScreenReducerTest {
         val sideEffect = MovieScreenSideEffects.WaitingForSaveAsFavorite(1)
         val input = MovieScreenAction.SideEffectHandled(sideEffect)
         var state = MovieScreenState(
-            sideEffects = listOf(MovieScreenSideEffects.WaitingForSaveAsFavorite(1))
+            sideEffects = listOf(MovieScreenSideEffects.WaitingForSaveAsFavorite(1)),
         )
         reducer(input).test {
             state = awaitItem()(state)
@@ -345,8 +344,8 @@ class MovieScreenReducerTest {
             Either.Right(
                 Movie(
                     "1",
-                    "Movie1"
-                )
+                    "Movie1",
+                ),
             )
         },
         actors: OrchestratedUpdate<LoadData, AppError, Page<Actor>> = OrchestratedUpdate {
@@ -360,7 +359,7 @@ class MovieScreenReducerTest {
                         Actor("actor2", "actor2"),
                         Actor("actor3", "actor3"),
                     ),
-                )
+                ),
             )
         },
         comments: OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> = OrchestratedFlowUpdate {
@@ -376,13 +375,13 @@ class MovieScreenReducerTest {
                             Comment("comment3", "content3"),
                         ),
 
-                        )
-                )
+                    ),
+                ),
             )
         },
         saveAsFavorite: OrchestratedSideEffect<SaveAsFavorite, AppError> = OrchestratedSideEffect {
             Either.Right(Unit)
-        }
+        },
     ) = movieScreenReducer(
         movie,
         actors,

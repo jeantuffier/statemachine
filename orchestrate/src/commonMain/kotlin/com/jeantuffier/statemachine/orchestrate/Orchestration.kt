@@ -27,7 +27,7 @@ suspend fun <Type, Input, Error : Throwable> orchestrate(
         when (val result = orchestrator(input)) {
             is Either.Left -> AsyncData.Failure(result.value)
             is Either.Right -> AsyncData.Success(result.value)
-        }
+        },
     )
 }
 
@@ -52,7 +52,7 @@ suspend fun <Type, Input, Error : Throwable> orchestratePaging(
         when (val result = orchestrator(input)) {
             is Either.Left -> AsyncData.Failure(result.value)
             is Either.Right -> AsyncData.Success(result.value)
-        }
+        },
     )
 }
 
@@ -76,6 +76,6 @@ suspend fun <Input, Error : Throwable> orchestrateSideEffect(
         when (val result = orchestrator(input)) {
             is Either.Left -> AsyncData.Failure(result.value)
             is Either.Right -> AsyncData.Success(result.value)
-        }
+        },
     )
 }
