@@ -24,7 +24,7 @@ import com.squareup.kotlinpoet.ksp.writeTo
 
 class StateGenerator(
     private val logger: KSPLogger,
-    private val codeGenerator: CodeGenerator
+    private val codeGenerator: CodeGenerator,
 ) {
 
     fun generateViewState(classDeclaration: KSClassDeclaration) {
@@ -43,7 +43,7 @@ class StateGenerator(
                     .addModifiers(KModifier.DATA)
                     .primaryConstructor(generateViewStateConstructor(properties))
                     .addProperties(generateViewStateProperties(properties))
-                    .build()
+                    .build(),
             )
         }.build()
 
@@ -103,7 +103,7 @@ class StateGenerator(
         propertySpecs.add(
             PropertySpec.builder("sideEffects", propertyTypeName)
                 .initializer("sideEffects")
-                .build()
+                .build(),
         )
 
         return propertySpecs

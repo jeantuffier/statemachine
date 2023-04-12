@@ -33,7 +33,7 @@ class MovieScreenHelpersTest {
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
             Either.Right(movie)
         }
-        loadMovie(input, orchestrator).test {
+        loadMovieScreenMovie(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.movie.isLoading)
             assertNull(next.movie.value)
@@ -55,7 +55,7 @@ class MovieScreenHelpersTest {
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
             Either.Left(AppError.SomeRandomError)
         }
-        loadMovie(input, orchestrator).test {
+        loadMovieScreenMovie(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.movie.isLoading)
             assertNull(next.movie.value)
@@ -84,12 +84,12 @@ class MovieScreenHelpersTest {
                 Actor("actor1", "actor1"),
                 Actor("actor2", "actor2"),
                 Actor("actor3", "actor3"),
-            )
+            ),
         )
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Page<Actor>> {
             Either.Right(actors)
         }
-        loadActors(input, orchestrator).test {
+        loadMovieScreenActors(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.actors.isLoading)
             assertTrue(next.actors.items.isEmpty())
@@ -102,7 +102,8 @@ class MovieScreenHelpersTest {
                     Actor("actor1", "actor1"),
                     Actor("actor2", "actor2"),
                     Actor("actor3", "actor3"),
-                ), next.actors.items
+                ),
+                next.actors.items,
             )
             assertTrue(next.actors.hasLoadedEverything())
 
@@ -119,7 +120,7 @@ class MovieScreenHelpersTest {
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
             Either.Left(AppError.SomeRandomError)
         }
-        loadMovie(input, orchestrator).test {
+        loadMovieScreenMovie(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.movie.isLoading)
             assertNull(next.movie.value)
@@ -155,7 +156,7 @@ class MovieScreenHelpersTest {
         val orchestrator = OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> {
             flowOf(Either.Right(comments))
         }
-        loadComments(input, orchestrator).test {
+        loadMovieScreenComments(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.comments.isLoading)
             assertEquals(emptyList(), next.comments.items)
@@ -180,7 +181,7 @@ class MovieScreenHelpersTest {
         val orchestrator = OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> {
             flowOf(Either.Left(AppError.SomeRandomError))
         }
-        loadComments(input, orchestrator).test {
+        loadMovieScreenComments(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.comments.isLoading)
             assertEquals(emptyList(), next.comments.items)

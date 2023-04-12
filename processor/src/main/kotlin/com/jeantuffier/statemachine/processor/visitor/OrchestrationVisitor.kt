@@ -3,10 +3,10 @@ package com.jeantuffier.statemachine.processor.visitor
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSVisitorVoid
+import com.jeantuffier.statemachine.processor.generator.ActionsGenerator
 import com.jeantuffier.statemachine.processor.generator.HelpersGenerator
 import com.jeantuffier.statemachine.processor.generator.ReducerGenerator
 import com.jeantuffier.statemachine.processor.generator.SideEffectGenerator
-import com.jeantuffier.statemachine.processor.generator.ActionsGenerator
 import com.jeantuffier.statemachine.processor.generator.StateGenerator
 import com.jeantuffier.statemachine.processor.generator.StateMachineGenerator
 
@@ -23,7 +23,7 @@ class OrchestrationVisitor(
 
     override fun visitClassDeclaration(
         classDeclaration: KSClassDeclaration,
-        data: Unit
+        data: Unit,
     ) {
         viewStateGenerator.generateViewState(classDeclaration)
         viewActionsGenerator.generateActions(classDeclaration)

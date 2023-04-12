@@ -5,7 +5,6 @@ import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
-import com.jeantuffier.statemachine.core.Reducer
 import com.jeantuffier.statemachine.core.StateMachine
 import com.jeantuffier.statemachine.orchestrate.Content
 import com.jeantuffier.statemachine.orchestrate.Orchestrated
@@ -27,7 +26,7 @@ import kotlin.coroutines.CoroutineContext
 
 class StateMachineGenerator(
     private val logger: KSPLogger,
-    private val codeGenerator: CodeGenerator
+    private val codeGenerator: CodeGenerator,
 ) {
 
     fun generateStateMachine(classDeclaration: KSClassDeclaration) {
@@ -54,7 +53,7 @@ class StateMachineGenerator(
                     .addParameters(sideEffectParameters(classDeclaration, error.toClassName()))
                     .addParameter(
                         ParameterSpec.builder("coroutineContext", CoroutineContext::class.asClassName())
-                            .build()
+                            .build(),
                     )
                     .returns(returnType)
                     .addStatement(
@@ -66,9 +65,9 @@ class StateMachineGenerator(
                                     ${stateMachineReducerParameter(classDeclaration).joinToString(",\n")}
                                 )
                             )
-                        """.trimIndent()
+                        """.trimIndent(),
                     )
-                    .build()
+                    .build(),
             )
         }.build()
 
@@ -163,7 +162,7 @@ class StateMachineGenerator(
             }
             properties.forEach {
                 val functionName = it.simpleName.asString().replaceFirstChar(Char::uppercaseChar)
-                append("load${functionName}(action, ${it.simpleName.asString()})")
+                append("load$functionName(action, ${it.simpleName.asString()})")
                 if (properties.size > 1) {
                     append(",")
                 }

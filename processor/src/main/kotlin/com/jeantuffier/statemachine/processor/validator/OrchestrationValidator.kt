@@ -16,10 +16,10 @@ import com.squareup.kotlinpoet.ksp.toClassName
 class OrchestrationValidator {
 
     fun isValid(symbol: KSAnnotated, logger: KSPLogger): Boolean {
-        return symbol is KSClassDeclaration
-                && symbol.validate()
-                && symbol.validateClassNames(logger)
-                && symbol.validateProperties(logger)
+        return symbol is KSClassDeclaration &&
+            symbol.validate() &&
+            symbol.validateClassNames(logger) &&
+            symbol.validateProperties(logger)
     }
 
     private fun KSClassDeclaration.validateClassNames(logger: KSPLogger): Boolean {
@@ -56,7 +56,7 @@ class OrchestrationValidator {
 
     private fun validateAsyncDataProperty(
         property: KSPropertyDeclaration,
-        logger: KSPLogger
+        logger: KSPLogger,
     ): Boolean {
         val propertySimpleName = property.type.resolve().toClassName().simpleName
         val propertyAnnotations = property.annotations.toList()
