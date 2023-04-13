@@ -206,7 +206,7 @@ class MovieScreenHelpersTest {
         val orchestrator = OrchestratedSideEffect<SaveAsFavorite, AppError> {
             Either.Right(Unit)
         }
-        onSaveAsFavorite(input, orchestrator).test {
+        onMovieScreenSaveAsFavorite(input, orchestrator).test {
             next = awaitItem()(next)
             assertEquals(1, next.sideEffects.size)
             assertTrue(next.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)
@@ -230,7 +230,7 @@ class MovieScreenHelpersTest {
         val orchestrator = OrchestratedSideEffect<SaveAsFavorite, AppError> {
             Either.Left(AppError.SomeRandomError)
         }
-        onSaveAsFavorite(input, orchestrator).test {
+        onMovieScreenSaveAsFavorite(input, orchestrator).test {
             next = awaitItem()(next)
             assertEquals(1, next.sideEffects.size)
             assertTrue(next.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)

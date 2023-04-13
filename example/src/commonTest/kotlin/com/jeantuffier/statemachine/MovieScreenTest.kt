@@ -307,7 +307,6 @@ class MovieScreenTest {
                             Comment("comment2", "content2"),
                             Comment("comment3", "content3"),
                         ),
-
                     ),
                 ),
             )
