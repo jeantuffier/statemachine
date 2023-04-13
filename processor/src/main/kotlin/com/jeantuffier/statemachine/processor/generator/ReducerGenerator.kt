@@ -139,7 +139,7 @@ class ReducerGenerator(
             }
         val sideEffects = classDeclaration.annotations.first().arguments[2].value as List<KSType>
         val sideEffectStatements = sideEffects.map {
-            "is ${actionClass.simpleName}.${it.toClassName().simpleName} -> on${it.toClassName().simpleName}(action, ${it.lowerCaseSimpleName()})"
+            "is ${actionClass.simpleName}.${it.toClassName().simpleName} -> on$baseName${it.toClassName().simpleName}(action, ${it.lowerCaseSimpleName()})"
         }
         return contentStatements + sideEffectStatements
     }

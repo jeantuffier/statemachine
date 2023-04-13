@@ -174,8 +174,8 @@ private fun sideEffectFunction(
     val orchestrator = OrchestratedSideEffect::class.asClassName()
         .parameterizedBy(trigger, errorClass)
 
-    val builder = FunSpec.builder("on$name")
-        .addModifiers(KModifier.SUSPEND)
+    val builder = FunSpec.builder("on$baseName$name")
+        .addModifiers(KModifier.SUSPEND, KModifier.INTERNAL)
         .returns(returnType)
         .addParameter(ParameterSpec.builder("input", trigger).build())
         .addParameter(
