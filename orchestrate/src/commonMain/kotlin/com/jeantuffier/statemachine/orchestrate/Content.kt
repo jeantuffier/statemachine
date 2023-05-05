@@ -3,24 +3,31 @@ package com.jeantuffier.statemachine.orchestrate
 import kotlinx.serialization.Serializable
 import kotlin.jvm.JvmInline
 
-data class Content<T>(
+@Serializable
+data class OrchestratedData<T>(
     val isLoading: Boolean = false,
     val value: T? = null,
 )
 
-data class PagingContent<T>(
+@Serializable
+data class OrchestratedPage<T>(
     val available: Available = Available(0),
     val isLoading: Boolean = false,
-    val items: List<T> = emptyList(),
-)
+    val pages: Map<Int, List<T>> = emptyMap(),
+) {
+    fun items(): List<T> = pages.values.flatten()
 
-fun <T> PagingContent<T>.hasLoadedEverything() = items.isNotEmpty() && available.value == items.size
+    fun hasLoadedEverything(): Boolean {
+        val items = items()
+        return items.isNotEmpty() && available.value == items.size
+    }
+}
 
 @Serializable
 data class Page<T>(
-    val offset: Offset = Offset(0),
-    val limit: Limit = Limit(0),
     val available: Available = Available(0),
+    val offset: Offset = Offset(0),
+    val limit: Limit = Limit(20),
     val items: List<T> = emptyList(),
 )
 

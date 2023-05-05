@@ -4,9 +4,9 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.jeantuffier.statemachine.orchestrate.Content
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
+import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.jeantuffier.statemachine.orchestrate.PagingContent
 import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -64,10 +64,10 @@ class StateGenerator(
     private fun KSPropertyDeclaration.generateAsyncDataConstructorParameter(): ParameterSpec {
         val propertyName = simpleName.asString()
         val builder = ParameterSpec.builder(propertyName, type.toTypeName())
-        if (isContent()) {
-            builder.defaultValue("%T()", Content::class.asTypeName())
+        if (isData()) {
+            builder.defaultValue("%T()", OrchestratedData::class.asTypeName())
         } else {
-            builder.defaultValue("%T()", PagingContent::class.asTypeName())
+            builder.defaultValue("%T()", OrchestratedPage::class.asTypeName())
         }
         return builder.build()
     }
@@ -109,6 +109,6 @@ class StateGenerator(
         return propertySpecs
     }
 
-    private fun KSPropertyDeclaration.isContent(): Boolean =
-        type.resolve()?.toClassName() == Content::class.asClassName()
+    private fun KSPropertyDeclaration.isData(): Boolean =
+        type.resolve().toClassName() == OrchestratedData::class.asClassName()
 }

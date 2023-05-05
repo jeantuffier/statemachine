@@ -8,9 +8,9 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeParameter
 import com.jeantuffier.statemachine.orchestrate.Action
-import com.jeantuffier.statemachine.orchestrate.Content
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
+import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.jeantuffier.statemachine.orchestrate.PagingContent
 import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -73,7 +73,7 @@ class ActionsGenerator(
 
     private fun KSClassDeclaration.eventsToAdd(): Set<KSClassDeclaration> {
         val orchestratedEvents = getAllProperties()
-            .filter { isContent(it) || isPagingContent(it) }
+            .filter { isData(it) || isPagingContent(it) }
             .mapNotNull { property ->
                 val type = property.annotations.first().arguments[0].value as KSType
                 type.declaration.closestClassDeclaration()
@@ -85,11 +85,11 @@ class ActionsGenerator(
         return orchestratedEvents + sideEffectsEvent
     }
 
-    private fun isContent(property: KSPropertyDeclaration): Boolean =
-        property.type.resolve().toClassName() == Content::class.asClassName()
+    private fun isData(property: KSPropertyDeclaration): Boolean =
+        property.type.resolve().toClassName() == OrchestratedData::class.asClassName()
 
     private fun isPagingContent(property: KSPropertyDeclaration): Boolean =
-        property.type.resolve().toClassName() == PagingContent::class.asClassName()
+        property.type.resolve().toClassName() == OrchestratedPage::class.asClassName()
 
     private fun addSealedElement(
         action: KSClassDeclaration,

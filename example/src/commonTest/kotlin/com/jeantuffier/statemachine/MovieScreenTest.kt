@@ -3,13 +3,10 @@ package com.jeantuffier.statemachine
 import app.cash.turbine.test
 import arrow.core.Either
 import com.jeantuffier.statemachine.orchestrate.Available
-import com.jeantuffier.statemachine.orchestrate.Limit
-import com.jeantuffier.statemachine.orchestrate.Offset
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
 import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
 import com.jeantuffier.statemachine.orchestrate.Page
-import com.jeantuffier.statemachine.orchestrate.hasLoadedEverything
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
@@ -42,37 +39,39 @@ class MovieScreenTest {
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1"))
+            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", 0, 10))
 
             var next = awaitItem()
             assertTrue(next.movie.isLoading)
             assertNull(next.movie.value)
             assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
 
             next = awaitItem()
             assertFalse(next.movie.isLoading)
             assertEquals(Movie("1", "Movie1"), next.movie.value)
             assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
 
             next = awaitItem()
             assertFalse(next.movie.isLoading)
             assertEquals(Movie("1", "Movie1"), next.movie.value)
             assertTrue(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
 
             next = awaitItem()
             assertFalse(next.movie.isLoading)
             assertEquals(Movie("1", "Movie1"), next.movie.value)
             assertFalse(next.actors.isLoading)
             assertEquals(
-                listOf(
-                    Actor("actor1", "actor1"),
-                    Actor("actor2", "actor2"),
-                    Actor("actor3", "actor3"),
+                mapOf(
+                    0 to listOf(
+                        Actor("actor1", "actor1"),
+                        Actor("actor2", "actor2"),
+                        Actor("actor3", "actor3"),
+                    ),
                 ),
-                next.actors.items,
+                next.actors.pages,
             )
             assertTrue(next.actors.hasLoadedEverything())
         }
@@ -87,7 +86,7 @@ class MovieScreenTest {
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1"))
+            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", 0, 10))
 
             var next = awaitItem()
             assertTrue(next.movie.isLoading)
@@ -103,19 +102,21 @@ class MovieScreenTest {
             next = awaitItem()
             assertFalse(next.movie.isLoading)
             assertTrue(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
             assertEquals(1, next.sideEffects.size)
             assertTrue(next.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadMovie)
 
             next = awaitItem()
             assertFalse(next.actors.isLoading)
             assertEquals(
-                listOf(
-                    Actor("actor1", "actor1"),
-                    Actor("actor2", "actor2"),
-                    Actor("actor3", "actor3"),
+                mapOf(
+                    0 to listOf(
+                        Actor("actor1", "actor1"),
+                        Actor("actor2", "actor2"),
+                        Actor("actor3", "actor3"),
+                    ),
                 ),
-                next.actors.items,
+                next.actors.pages,
             )
             assertTrue(next.actors.hasLoadedEverything())
         }
@@ -130,31 +131,31 @@ class MovieScreenTest {
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1"))
+            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", offset = 0, limit = 10))
 
             var next = awaitItem()
             assertTrue(next.movie.isLoading)
             assertNull(next.movie.value)
             assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
 
             next = awaitItem()
             assertFalse(next.movie.isLoading)
             assertEquals(Movie("1", "Movie1"), next.movie.value)
             assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
 
             next = awaitItem()
             assertFalse(next.movie.isLoading)
             assertEquals(Movie("1", "Movie1"), next.movie.value)
             assertTrue(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
 
             next = awaitItem()
             assertFalse(next.movie.isLoading)
             assertEquals(Movie("1", "Movie1"), next.movie.value)
             assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
             assertEquals(1, next.sideEffects.size)
             assertTrue(next.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadActors)
             assertFalse(next.actors.hasLoadedEverything())
@@ -167,21 +168,23 @@ class MovieScreenTest {
         defaultStateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadComments("1", 0, 0))
+            defaultStateMachine.reduce(MovieScreenAction.LoadComments("1", 0, 10))
 
             var next = awaitItem()
             assertTrue(next.comments.isLoading)
-            assertTrue(next.comments.items.isEmpty())
+            assertTrue(next.comments.pages.isEmpty())
 
             next = awaitItem()
             assertFalse(next.actors.isLoading)
             assertEquals(
-                listOf(
-                    Comment("comment1", "content1"),
-                    Comment("comment2", "content2"),
-                    Comment("comment3", "content3"),
+                mapOf(
+                    0 to listOf(
+                        Comment("comment1", "content1"),
+                        Comment("comment2", "content2"),
+                        Comment("comment3", "content3"),
+                    ),
                 ),
-                next.comments.items,
+                next.comments.pages,
             )
             assertTrue(next.comments.hasLoadedEverything())
         }
@@ -200,12 +203,12 @@ class MovieScreenTest {
 
             var next = awaitItem()
             assertTrue(next.comments.isLoading)
-            assertTrue(next.comments.items.isEmpty())
+            assertTrue(next.comments.pages.isEmpty())
 
             next = awaitItem()
             assertFalse(next.comments.isLoading)
             assertEquals(1, next.sideEffects.size)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
             assertTrue(next.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadComments)
             assertFalse(next.comments.hasLoadedEverything())
         }
@@ -284,8 +287,6 @@ class MovieScreenTest {
         actors: OrchestratedUpdate<LoadData, AppError, Page<Actor>> = OrchestratedUpdate {
             Either.Right(
                 Page(
-                    offset = Offset(0),
-                    limit = Limit(0),
                     available = Available(3),
                     items = listOf(
                         Actor("actor1", "actor1"),
@@ -299,8 +300,6 @@ class MovieScreenTest {
             flowOf(
                 Either.Right(
                     Page(
-                        offset = Offset(0),
-                        limit = Limit(0),
                         available = Available(3),
                         items = listOf(
                             Comment("comment1", "content1"),

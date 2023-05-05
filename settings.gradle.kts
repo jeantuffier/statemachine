@@ -6,7 +6,7 @@ pluginManagement {
         id("com.rickclephas.kmp.nativecoroutines") version "0.13.3" apply false
         id("org.jmailen.kotlinter") version "3.14.0" apply false
         kotlin("multiplatform") version kotlinVersion apply false
-        kotlin("plugin.serialization") version "1.8.10" apply false
+        kotlin("plugin.serialization") version kotlinVersion apply false
     }
     repositories {
         google()

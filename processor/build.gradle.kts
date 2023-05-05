@@ -1,5 +1,8 @@
-
 val kspVersion: String by project
+val kotlinPoetVersion: String by project
+val arrowVersion: String by project
+val kotlinxCoroutineVersion: String by project
+val turbineVersion: String by project
 
 plugins {
     kotlin("multiplatform")
@@ -8,7 +11,7 @@ plugins {
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.2.0-dev2"
+version = "0.2.0-dev6"
 
 repositories {
     google()
@@ -20,7 +23,10 @@ publishing {
         maven {
             url = uri("https://maven.pkg.github.com/jeantuffier/statemachine")
             name = "github"
-            credentials(PasswordCredentials::class)
+            credentials {
+                username = System.getenv("GITHUB_USERNAME")
+                password = System.getenv("GITHUB_PASSWORD")
+            }
         }
     }
 }
@@ -33,11 +39,11 @@ kotlin {
             dependencies {
                 implementation(project(":core"))
                 implementation(project(":orchestrate"))
-                implementation("com.squareup:kotlinpoet:1.12.0")
-                implementation("com.squareup:kotlinpoet-ksp:1.12.0")
+                implementation("com.squareup:kotlinpoet:$kotlinPoetVersion")
+                implementation("com.squareup:kotlinpoet-ksp:$kotlinPoetVersion")
                 implementation("com.google.devtools.ksp:symbol-processing-api:$kspVersion")
-                implementation("io.arrow-kt:arrow-core:1.1.3")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+                implementation("io.arrow-kt:arrow-core:$arrowVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
             }
             kotlin.srcDir("src/main/kotlin")
             resources.srcDir("src/main/resources")

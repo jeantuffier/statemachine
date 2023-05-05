@@ -2,6 +2,7 @@ package com.jeantuffier.statemachine
 
 import app.cash.turbine.test
 import arrow.core.Either
+import arrow.core.right
 import com.jeantuffier.statemachine.orchestrate.Available
 import com.jeantuffier.statemachine.orchestrate.Limit
 import com.jeantuffier.statemachine.orchestrate.Offset
@@ -9,7 +10,6 @@ import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
 import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
 import com.jeantuffier.statemachine.orchestrate.Page
-import com.jeantuffier.statemachine.orchestrate.hasLoadedEverything
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
@@ -27,6 +27,8 @@ class MovieScreenHelpersTest {
     fun loadMovieShouldSucceed() = runTest {
         val input = object : LoadData {
             override val id: String = "1"
+            override val offset: Int = 0
+            override val limit: Int = 10
         }
         var next = MovieScreenState()
         val movie = Movie("movie1", "movie1")
@@ -50,6 +52,8 @@ class MovieScreenHelpersTest {
     fun loadMovieShouldFail() = runTest {
         val input = object : LoadData {
             override val id: String = "1"
+            override val offset: Int = 0
+            override val limit: Int = 10
         }
         var next = MovieScreenState()
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
@@ -74,12 +78,14 @@ class MovieScreenHelpersTest {
     fun loadActorsShouldSucceed() = runTest {
         val input = object : LoadData {
             override val id: String = "1"
+            override val offset: Int = 0
+            override val limit: Int = 10
         }
         var next = MovieScreenState()
         val actors = Page(
+            available = Available(3),
             offset = Offset(0),
             limit = Limit(3),
-            available = Available(3),
             items = listOf(
                 Actor("actor1", "actor1"),
                 Actor("actor2", "actor2"),
@@ -92,18 +98,20 @@ class MovieScreenHelpersTest {
         loadMovieScreenActors(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.actors.isLoading)
-            assertTrue(next.actors.items.isEmpty())
+            assertTrue(next.actors.pages.isEmpty())
             assertFalse(next.actors.hasLoadedEverything())
 
             next = awaitItem()(next)
             assertFalse(next.movie.isLoading)
             assertEquals(
-                listOf(
-                    Actor("actor1", "actor1"),
-                    Actor("actor2", "actor2"),
-                    Actor("actor3", "actor3"),
+                mapOf(
+                    0 to listOf(
+                        Actor("actor1", "actor1"),
+                        Actor("actor2", "actor2"),
+                        Actor("actor3", "actor3"),
+                    ),
                 ),
-                next.actors.items,
+                next.actors.pages,
             )
             assertTrue(next.actors.hasLoadedEverything())
 
@@ -115,6 +123,8 @@ class MovieScreenHelpersTest {
     fun loadActorsShouldFail() = runTest {
         val input = object : LoadData {
             override val id: String = "1"
+            override val offset: Int = 0
+            override val limit: Int = 10
         }
         var next = MovieScreenState()
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
@@ -143,27 +153,44 @@ class MovieScreenHelpersTest {
             override val limit = 3
         }
         var next = MovieScreenState()
-        val comments = Page(
+        val page1 = Page(
+            Available(6),
             Offset(0),
             Limit(3),
-            Available(3),
             listOf(
                 Comment("comment1", "comment1"),
                 Comment("comment2", "comment2"),
                 Comment("comment3", "comment3"),
             ),
         )
+        val page2 = Page(
+            Available(6),
+            Offset(3),
+            Limit(3),
+            listOf(
+                Comment("comment4", "comment4"),
+                Comment("comment5", "comment5"),
+                Comment("comment6", "comment6"),
+            ),
+        )
         val orchestrator = OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> {
-            flowOf(Either.Right(comments))
+            flowOf(page1.right(), page2.right())
         }
         loadMovieScreenComments(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.comments.isLoading)
-            assertEquals(emptyList(), next.comments.items)
+            assertEquals(emptyMap(), next.comments.pages)
 
             next = awaitItem()(next)
             assertFalse(next.movie.isLoading)
-            assertEquals(comments.items, next.comments.items)
+            assertEquals(1, next.comments.pages.size)
+            assertEquals(page1.items, next.comments.pages[0])
+            assertFalse(next.comments.hasLoadedEverything())
+
+            next = awaitItem()(next)
+            assertFalse(next.movie.isLoading)
+            assertEquals(2, next.comments.pages.size)
+            assertEquals(page2.items, next.comments.pages[1])
             assertTrue(next.comments.hasLoadedEverything())
 
             awaitComplete()
@@ -184,11 +211,11 @@ class MovieScreenHelpersTest {
         loadMovieScreenComments(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.comments.isLoading)
-            assertEquals(emptyList(), next.comments.items)
+            assertEquals(emptyMap(), next.comments.pages)
 
             next = awaitItem()(next)
             assertFalse(next.movie.isLoading)
-            assertEquals(emptyList(), next.comments.items)
+            assertEquals(emptyMap(), next.comments.pages)
             assertFalse(next.comments.hasLoadedEverything())
             assertEquals(1, next.sideEffects.size)
             assertTrue(next.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadComments)

@@ -1,10 +1,10 @@
 package com.jeantuffier.statemachine
 
-import com.jeantuffier.statemachine.orchestrate.Content
 import com.jeantuffier.statemachine.orchestrate.LoadingStrategy
 import com.jeantuffier.statemachine.orchestrate.Orchestrated
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
+import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.jeantuffier.statemachine.orchestrate.PagingContent
 
 @Orchestration(
     baseName = "MovieScreen",
@@ -16,17 +16,17 @@ interface MovieScreenOrchestration {
         trigger = LoadData::class,
         loadingStrategy = LoadingStrategy.SUSPEND,
     )
-    val movie: Content<Movie>
+    val movie: OrchestratedData<Movie>
 
     @Orchestrated(
         trigger = LoadData::class,
         loadingStrategy = LoadingStrategy.SUSPEND,
     )
-    val actors: PagingContent<Actor>
+    val actors: OrchestratedPage<Actor>
 
     @Orchestrated(
         trigger = LoadComments::class,
         loadingStrategy = LoadingStrategy.FLOW,
     )
-    val comments: PagingContent<Comment>
+    val comments: OrchestratedPage<Comment>
 }
