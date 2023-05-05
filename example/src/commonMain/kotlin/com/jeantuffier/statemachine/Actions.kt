@@ -5,6 +5,8 @@ import com.jeantuffier.statemachine.orchestrate.Action
 @Action
 interface LoadData {
     val id: String
+    val offset: Int
+    val limit: Int
 }
 
 @Action

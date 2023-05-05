@@ -6,13 +6,13 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.jeantuffier.statemachine.core.StateUpdate
-import com.jeantuffier.statemachine.orchestrate.Content
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
+import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
 import com.jeantuffier.statemachine.orchestrate.Orchestration
 import com.jeantuffier.statemachine.orchestrate.Page
-import com.jeantuffier.statemachine.orchestrate.PagingContent
 import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -48,6 +48,8 @@ class HelpersGenerator(
         ).apply {
             addImport("com.jeantuffier.statemachine.core", "StateUpdate")
             addImport("com.jeantuffier.statemachine.orchestrate", "AsyncData")
+            addImport("com.jeantuffier.statemachine.orchestrate", "OrchestratedData")
+            addImport("com.jeantuffier.statemachine.orchestrate", "OrchestratedPage")
             addImport("com.jeantuffier.statemachine.orchestrate", "orchestrate")
             addImport("com.jeantuffier.statemachine.orchestrate", "orchestratePaging")
             addImport("com.jeantuffier.statemachine.orchestrate", "orchestrateSideEffect")
@@ -56,7 +58,7 @@ class HelpersGenerator(
             addImport("kotlinx.coroutines.flow", "map")
 
             classDeclaration.getAllProperties()
-                .filter { it.isContent() || it.isPagingContent() }
+                .filter { it.isData() || it.isPagingContent() }
                 .forEach { property ->
                     addImport(packageName, "${baseName}SideEffects.CouldNotLoad${property.upperCaseSimpleName()}")
                     addFunction(
@@ -102,7 +104,7 @@ private fun loadFunction(
     val state = StateUpdate::class.asClassName().parameterizedBy(viewStateClass)
     val returnType = Flow::class.asTypeName().parameterizedBy(state)
     val type = orchestratedProperty.type.resolve()
-    val orchestrationType: TypeName = if (type.toClassName() == Content::class.asClassName()) {
+    val orchestrationType: TypeName = if (type.toClassName() == OrchestratedData::class.asClassName()) {
         type.arguments[0].type!!.resolve().toClassName()
     } else {
         Page::class.asClassName().parameterizedBy(type.arguments[0].type!!.resolve().toClassName())
@@ -127,7 +129,7 @@ private fun loadFunction(
         )
 
     val orchestration = when {
-        orchestratedProperty.isContent() -> "return orchestrate(input, orchestrator)"
+        orchestratedProperty.isData() -> "return orchestrate(input, orchestrator)"
         orchestratedProperty.isPagingContent() -> "return orchestratePaging(input, orchestrator)"
         else -> throw IllegalStateException()
     }
@@ -139,18 +141,12 @@ private fun loadFunction(
                 when (newValue) {
                     is AsyncData.Loading -> StateUpdate { it.copy($name = it.$name.copy(isLoading = true)) }
                     is AsyncData.Success -> StateUpdate {
-                        it.copy(
-                            $name = it.$name.copy(
-                                ${updateAvailability(orchestratedProperty)}
-                                isLoading = false,
-                                ${updateStatement(orchestratedProperty)}
-                            )
-                        )
+                        ${updateStatement(orchestratedProperty)}
                     }
                     is AsyncData.Failure -> StateUpdate {
                        it.copy(
                             $name = it.$name.copy(isLoading = false),
-                            sideEffects = it.sideEffects + CouldNotLoad${name.replaceFirstChar(Char::uppercase)}(Random.nextLong())
+                            sideEffects = it.sideEffects + CouldNotLoad${name.replaceFirstChar(Char::uppercase)}(Random.nextLong(), newValue.error)
                         )
                     }
                 }
@@ -211,11 +207,11 @@ private fun sideEffectFunction(
     return builder.build()
 }
 
-private fun KSPropertyDeclaration.isContent(): Boolean =
-    type.resolve().toClassName() == Content::class.asClassName()
+private fun KSPropertyDeclaration.isData(): Boolean =
+    type.resolve().toClassName() == OrchestratedData::class.asClassName()
 
 private fun KSPropertyDeclaration.isPagingContent(): Boolean =
-    type.resolve().toClassName() == PagingContent::class.asClassName()
+    type.resolve().toClassName() == OrchestratedPage::class.asClassName()
 
 private fun updateAvailability(property: KSPropertyDeclaration): String {
     return if (property.isPagingContent()) {
@@ -227,8 +223,32 @@ private fun updateAvailability(property: KSPropertyDeclaration): String {
 
 private fun updateStatement(property: KSPropertyDeclaration): String =
     when {
-        property.isContent() -> "value = newValue.data"
-        property.isPagingContent() -> "items = it.${property.simpleName.asString()}.items + newValue.data.items"
+        property.isData() -> {
+            """
+                it.copy(
+                    ${property.simpleName.asString()} = OrchestratedData(
+                        isLoading = false,
+                        value = newValue.data,
+                    )
+                )
+            """.trimIndent()
+        }
+
+        property.isPagingContent() -> {
+            """
+                val pageNumber = newValue.data.offset.value / input.limit
+                it.copy(
+                    ${property.simpleName.asString()} = OrchestratedPage(
+                        available = newValue.data.available,
+                        isLoading = false,
+                        pages = it.${property.simpleName.asString()}.pages.toMutableMap().apply {
+                            this[pageNumber] = newValue.data.items
+                        }
+                    )
+                )
+            """.trimIndent()
+        }
+
         else -> throw IllegalStateException()
     }
 

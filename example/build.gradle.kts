@@ -1,3 +1,7 @@
+val arrowVersion: String by project
+val kotlinxCoroutineVersion: String by project
+val turbineVersion: String by project
+
 plugins {
     kotlin("multiplatform")
     id("com.google.devtools.ksp")
@@ -5,7 +9,7 @@ plugins {
 }
 
 group = "com.jeantuffier"
-version = "0.2.0-dev2"
+version = "0.2.0-dev6"
 
 repositories {
     google()
@@ -39,8 +43,8 @@ kotlin {
             dependencies {
                 implementation(project(":orchestrate"))
                 implementation(project(":core"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-                implementation("io.arrow-kt:arrow-core:1.1.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
+                implementation("io.arrow-kt:arrow-core:$arrowVersion")
             }
             kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
         }
@@ -49,9 +53,9 @@ kotlin {
                 implementation(project(":core"))
                 implementation(kotlin("test-common"))
                 implementation(kotlin("test-annotations-common"))
-                implementation("app.cash.turbine:turbine:0.12.1")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.6.4")
+                implementation("app.cash.turbine:turbine:$turbineVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutineVersion")
             }
         }
 

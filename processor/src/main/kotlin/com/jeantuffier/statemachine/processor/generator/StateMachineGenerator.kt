@@ -6,8 +6,8 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.jeantuffier.statemachine.core.StateMachine
-import com.jeantuffier.statemachine.orchestrate.Content
 import com.jeantuffier.statemachine.orchestrate.Orchestrated
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
 import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
@@ -116,7 +116,7 @@ class StateMachineGenerator(
 
         val type = property.type.resolve()
 
-        val orchestrationType: TypeName = if (type.toClassName() == Content::class.asClassName()) {
+        val orchestrationType: TypeName = if (type.toClassName() == OrchestratedData::class.asClassName()) {
             type.arguments[0].type!!.resolve().toClassName()
         } else {
             Page::class.asClassName().parameterizedBy(type.arguments[0].type!!.resolve().toClassName())

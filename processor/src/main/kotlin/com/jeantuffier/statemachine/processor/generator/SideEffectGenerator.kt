@@ -5,9 +5,9 @@ import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
-import com.jeantuffier.statemachine.orchestrate.Content
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
+import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.jeantuffier.statemachine.orchestrate.PagingContent
 import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -44,12 +44,18 @@ class SideEffectGenerator(
                         .primaryConstructor(
                             FunSpec.constructorBuilder()
                                 .addParameter("id", Long::class)
+                                .addParameter("error", Throwable::class)
                                 .build(),
                         )
                         .addProperty(
                             PropertySpec.builder("id", Long::class)
                                 .addModifiers(KModifier.OVERRIDE)
                                 .initializer("id")
+                                .build(),
+                        )
+                        .addProperty(
+                            PropertySpec.builder("error", Throwable::class)
+                                .initializer("error")
                                 .build(),
                         )
                         .superclass(ClassName(packageName, fileName))
@@ -102,10 +108,10 @@ class SideEffectGenerator(
     }
 
     private fun KSPropertyDeclaration.isContent(): Boolean =
-        type.resolve().toClassName() == Content::class.asClassName()
+        type.resolve().toClassName() == OrchestratedData::class.asClassName()
 
     private fun KSPropertyDeclaration.isPagingContent(): Boolean =
-        type.resolve().toClassName() == PagingContent::class.asClassName()
+        type.resolve().toClassName() == OrchestratedPage::class.asClassName()
 
     private fun KSPropertyDeclaration.upperCaseSimpleName(): String =
         simpleName.asString().replaceFirstChar(Char::uppercaseChar)

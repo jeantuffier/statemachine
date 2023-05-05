@@ -3,14 +3,12 @@ package com.jeantuffier.statemachine
 import app.cash.turbine.test
 import arrow.core.Either
 import com.jeantuffier.statemachine.orchestrate.Available
-import com.jeantuffier.statemachine.orchestrate.Content
-import com.jeantuffier.statemachine.orchestrate.Limit
-import com.jeantuffier.statemachine.orchestrate.Offset
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
+import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
 import com.jeantuffier.statemachine.orchestrate.Page
-import com.jeantuffier.statemachine.orchestrate.PagingContent
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -24,19 +22,19 @@ class MovieScreenReducerTest {
     @Test
     fun loadDataShouldSucceed() = runTest {
         val reducer = createReducer()
-        val input = MovieScreenAction.LoadData("1")
+        val input = MovieScreenAction.LoadData("1", 0, 10)
         var state = MovieScreenState()
         reducer(input).test {
             state = awaitItem()(state)
             assertEquals(
-                MovieScreenState(movie = Content(isLoading = true)),
+                MovieScreenState(movie = OrchestratedData(isLoading = true)),
                 state,
             )
 
             state = awaitItem()(state)
             assertEquals(
                 MovieScreenState(
-                    movie = Content(
+                    movie = OrchestratedData(
                         isLoading = false,
                         value = Movie(id = "1", title = "Movie1"),
                     ),
@@ -47,14 +45,14 @@ class MovieScreenReducerTest {
             state = awaitItem()(state)
             assertEquals(
                 MovieScreenState(
-                    movie = Content(
+                    movie = OrchestratedData(
                         isLoading = false,
                         value = Movie(id = "1", title = "Movie1"),
                     ),
-                    actors = PagingContent(
+                    actors = OrchestratedPage(
                         available = Available(0),
                         isLoading = true,
-                        items = emptyList(),
+                        pages = emptyMap(),
                     ),
                 ),
                 state,
@@ -63,17 +61,19 @@ class MovieScreenReducerTest {
             state = awaitItem()(state)
             assertEquals(
                 MovieScreenState(
-                    movie = Content(
+                    movie = OrchestratedData(
                         isLoading = false,
                         value = Movie(id = "1", title = "Movie1"),
                     ),
-                    actors = PagingContent(
+                    actors = OrchestratedPage(
                         available = Available(3),
                         isLoading = false,
-                        items = listOf(
-                            Actor("actor1", "actor1"),
-                            Actor("actor2", "actor2"),
-                            Actor("actor3", "actor3"),
+                        pages = mapOf(
+                            0 to listOf(
+                                Actor("actor1", "actor1"),
+                                Actor("actor2", "actor2"),
+                                Actor("actor3", "actor3"),
+                            ),
                         ),
                     ),
                 ),
@@ -89,18 +89,18 @@ class MovieScreenReducerTest {
         val reducer = createReducer(
             movie = { Either.Left(AppError.SomeRandomError) },
         )
-        val input = MovieScreenAction.LoadData("1")
+        val input = MovieScreenAction.LoadData("1", 0, 10)
         var state = MovieScreenState()
         reducer(input).test {
             state = awaitItem()(state)
             assertEquals(
-                MovieScreenState(movie = Content(isLoading = true)),
+                MovieScreenState(movie = OrchestratedData(isLoading = true)),
                 state,
             )
 
             state = awaitItem()(state)
             assertEquals(
-                Content<Movie>(
+                OrchestratedData<Movie>(
                     isLoading = false,
                     value = null,
                 ),
@@ -111,17 +111,17 @@ class MovieScreenReducerTest {
 
             state = awaitItem()(state)
             assertEquals(
-                Content<Movie>(
+                OrchestratedData<Movie>(
                     isLoading = false,
                     value = null,
                 ),
                 state.movie,
             )
             assertEquals(
-                PagingContent(
+                OrchestratedPage(
                     available = Available(0),
                     isLoading = true,
-                    items = emptyList(),
+                    pages = emptyMap(),
                 ),
                 state.actors,
             )
@@ -130,20 +130,22 @@ class MovieScreenReducerTest {
 
             state = awaitItem()(state)
             assertEquals(
-                Content<Movie>(
+                OrchestratedData<Movie>(
                     isLoading = false,
                     value = null,
                 ),
                 state.movie,
             )
             assertEquals(
-                PagingContent(
+                OrchestratedPage(
                     available = Available(3),
                     isLoading = false,
-                    items = listOf(
-                        Actor("actor1", "actor1"),
-                        Actor("actor2", "actor2"),
-                        Actor("actor3", "actor3"),
+                    pages = mapOf(
+                        0 to listOf(
+                            Actor("actor1", "actor1"),
+                            Actor("actor2", "actor2"),
+                            Actor("actor3", "actor3"),
+                        ),
                     ),
                 ),
                 state.actors,
@@ -160,18 +162,18 @@ class MovieScreenReducerTest {
         val reducer = createReducer(
             actors = { Either.Left(AppError.SomeRandomError) },
         )
-        val input = MovieScreenAction.LoadData("1")
+        val input = MovieScreenAction.LoadData("1", 0, 10)
         var state = MovieScreenState()
         reducer(input).test {
             state = awaitItem()(state)
             assertEquals(
-                MovieScreenState(movie = Content(isLoading = true)),
+                MovieScreenState(movie = OrchestratedData(isLoading = true)),
                 state,
             )
 
             state = awaitItem()(state)
             assertEquals(
-                Content(
+                OrchestratedData(
                     isLoading = false,
                     value = Movie(id = "1", title = "Movie1"),
                 ),
@@ -180,34 +182,34 @@ class MovieScreenReducerTest {
 
             state = awaitItem()(state)
             assertEquals(
-                Content(
+                OrchestratedData(
                     isLoading = false,
                     value = Movie(id = "1", title = "Movie1"),
                 ),
                 state.movie,
             )
             assertEquals(
-                PagingContent(
+                OrchestratedPage(
                     available = Available(0),
                     isLoading = true,
-                    items = emptyList(),
+                    pages = emptyMap(),
                 ),
                 state.actors,
             )
 
             state = awaitItem()(state)
             assertEquals(
-                Content(
+                OrchestratedData(
                     isLoading = false,
                     value = Movie(id = "1", title = "Movie1"),
                 ),
                 state.movie,
             )
             assertEquals(
-                PagingContent(
+                OrchestratedPage(
                     available = Available(0),
                     isLoading = false,
-                    items = emptyList(),
+                    pages = emptyMap(),
                 ),
                 state.actors,
             )
@@ -226,23 +228,25 @@ class MovieScreenReducerTest {
         reducer(input).test {
             state = awaitItem()(state)
             assertEquals(
-                PagingContent(
+                OrchestratedPage(
                     available = Available(0),
                     isLoading = true,
-                    items = emptyList(),
+                    pages = emptyMap(),
                 ),
                 state.comments,
             )
 
             state = awaitItem()(state)
             assertEquals(
-                PagingContent(
+                OrchestratedPage(
                     available = Available(3),
                     isLoading = false,
-                    items = listOf(
-                        Comment("comment1", "content1"),
-                        Comment("comment2", "content2"),
-                        Comment("comment3", "content3"),
+                    pages = mapOf(
+                        0 to listOf(
+                            Comment("comment1", "content1"),
+                            Comment("comment2", "content2"),
+                            Comment("comment3", "content3"),
+                        ),
                     ),
                 ),
                 state.comments,
@@ -262,20 +266,20 @@ class MovieScreenReducerTest {
         reducer(input).test {
             state = awaitItem()(state)
             assertEquals(
-                PagingContent(
+                OrchestratedPage(
                     available = Available(0),
                     isLoading = true,
-                    items = emptyList(),
+                    pages = emptyMap(),
                 ),
                 state.comments,
             )
 
             state = awaitItem()(state)
             assertEquals(
-                PagingContent(
+                OrchestratedPage(
                     available = Available(0),
                     isLoading = false,
-                    items = emptyList(),
+                    pages = emptyMap(),
                 ),
                 state.comments,
             )
@@ -351,8 +355,6 @@ class MovieScreenReducerTest {
         actors: OrchestratedUpdate<LoadData, AppError, Page<Actor>> = OrchestratedUpdate {
             Either.Right(
                 Page(
-                    offset = Offset(0),
-                    limit = Limit(0),
                     available = Available(3),
                     items = listOf(
                         Actor("actor1", "actor1"),
@@ -366,15 +368,12 @@ class MovieScreenReducerTest {
             flowOf(
                 Either.Right(
                     Page(
-                        offset = Offset(0),
-                        limit = Limit(0),
                         available = Available(3),
                         items = listOf(
                             Comment("comment1", "content1"),
                             Comment("comment2", "content2"),
                             Comment("comment3", "content3"),
                         ),
-
                     ),
                 ),
             )
