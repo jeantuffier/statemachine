@@ -12,7 +12,7 @@ plugins {
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.2.0-dev6"
+version = "0.2.0-dev7"
 
 repositories {
     google()

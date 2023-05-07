@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.jeantuffier"
-version = "0.2.0-dev6"
+version = "0.2.0-dev7"
 
 repositories {
     google()
