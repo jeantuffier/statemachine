@@ -30,11 +30,11 @@ class StateMachineGenerator(
 ) {
 
     fun generateStateMachine(classDeclaration: KSClassDeclaration) {
-        val packageName = classDeclaration.packageName.asString()
         val annotation = classDeclaration.annotations.first {
             it.shortName.asString() == Orchestration::class.asClassName().simpleName
         }
         val baseName = annotation.arguments.first().value as String
+        val packageName = classDeclaration.packageName.asString() + ".${baseName.replaceFirstChar(Char::lowercase)}"
         val stateClass = "${baseName}State"
         val actionClass = "${baseName}Action"
         val functionName = "${baseName}StateMachine"

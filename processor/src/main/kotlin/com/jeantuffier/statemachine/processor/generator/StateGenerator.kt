@@ -7,7 +7,7 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.squareup.kotlinpoet.ClassName
+import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
@@ -28,11 +28,11 @@ class StateGenerator(
 ) {
 
     fun generateViewState(classDeclaration: KSClassDeclaration) {
-        val packageName = classDeclaration.packageName.asString()
         val arguments = classDeclaration.annotations.first {
             it.shortName.asString() == Orchestration::class.asClassName().simpleName
         }.arguments
         val baseName = arguments.first().value as String
+        val packageName = classDeclaration.packageName.asString() + ".${baseName.replaceFirstChar(Char::lowercase)}"
         val fileName = "${baseName}State"
 
         val properties = classDeclaration.getAllProperties()
@@ -56,7 +56,7 @@ class StateGenerator(
         baseName: String,
     ): FunSpec {
         val parameterSpecs: MutableList<ParameterSpec> = mutableListOf()
-        val specs = properties.mapNotNull { it.generateAsyncDataConstructorParameter() }
+        val specs = properties.map { it.generateOrchestratedConstructorParameter() }
         parameterSpecs.addAll(specs)
         parameterSpecs.add(generateSideEffectConstructorParameter(packageName, baseName))
 
@@ -65,7 +65,7 @@ class StateGenerator(
             .build()
     }
 
-    private fun KSPropertyDeclaration.generateAsyncDataConstructorParameter(): ParameterSpec {
+    private fun KSPropertyDeclaration.generateOrchestratedConstructorParameter(): ParameterSpec {
         val propertyName = simpleName.asString()
         val builder = ParameterSpec.builder(propertyName, type.toTypeName())
         if (isData()) {
@@ -76,18 +76,11 @@ class StateGenerator(
         return builder.build()
     }
 
-    private fun KSPropertyDeclaration.generateConstructorParameter(): ParameterSpec {
-        val propertyName = simpleName.asString()
-        val propertyType = type.resolve().toClassName()
-
-        return ParameterSpec.builder(propertyName, propertyType).build()
-    }
-
     private fun generateSideEffectConstructorParameter(
         packageName: String,
         baseName: String,
     ): ParameterSpec {
-        val type = ClassName(packageName, "${baseName}SideEffects")
+        val type = SideEffect::class.asTypeName()
         val propertyTypeName = List::class.asTypeName()
             .parameterizedBy(type)
         val emptyList = MemberName("kotlin.collections", "emptyList")
@@ -110,7 +103,7 @@ class StateGenerator(
         }
         propertySpecs.addAll(specs)
 
-        val type = ClassName(packageName, "${baseName}SideEffects")
+        val type = SideEffect::class.asTypeName()
         val propertyTypeName = List::class.asTypeName()
             .parameterizedBy(type)
         propertySpecs.add(

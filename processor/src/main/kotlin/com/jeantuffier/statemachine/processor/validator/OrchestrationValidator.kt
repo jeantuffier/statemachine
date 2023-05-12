@@ -47,14 +47,14 @@ class OrchestrationValidator {
             val propertySimpleName = property.type.resolve().toClassName().simpleName
 
             if (propertySimpleName == AsyncData::class.java.simpleName) {
-                return validateAsyncDataProperty(property, logger)
+                return validateOrchestrationProperty(property, logger)
             }
         }
 
         return true
     }
 
-    private fun validateAsyncDataProperty(
+    private fun validateOrchestrationProperty(
         property: KSPropertyDeclaration,
         logger: KSPLogger,
     ): Boolean {

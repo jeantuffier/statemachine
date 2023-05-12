@@ -1,6 +1,7 @@
 package com.jeantuffier.statemachine
 
 import com.jeantuffier.statemachine.orchestrate.Action
+import com.jeantuffier.statemachine.orchestrate.SideEffectAction
 
 @Action
 interface LoadData {
@@ -28,7 +29,7 @@ interface LoadComments {
     val limit: Int
 }
 
-@Action
+@SideEffectAction
 interface SaveAsFavorite {
     val id: String
 }
