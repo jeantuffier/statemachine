@@ -10,9 +10,7 @@ import com.jeantuffier.statemachine.processor.generator.SideEffectGenerator
 import com.jeantuffier.statemachine.processor.generator.StateGenerator
 import com.jeantuffier.statemachine.processor.generator.StateMachineGenerator
 
-class OrchestrationVisitor(
-    environment: SymbolProcessorEnvironment,
-) : KSVisitorVoid() {
+class OrchestrationVisitor(environment: SymbolProcessorEnvironment) : KSVisitorVoid() {
 
     private val viewStateGenerator = StateGenerator(environment.logger, environment.codeGenerator)
     private val viewActionsGenerator = ActionsGenerator(environment.logger, environment.codeGenerator)

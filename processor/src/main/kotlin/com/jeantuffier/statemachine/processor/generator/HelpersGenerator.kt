@@ -33,11 +33,11 @@ class HelpersGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
     fun generateHelpers(classDeclaration: KSClassDeclaration) {
-        val packageName = classDeclaration.packageName.asString()
         val arguments = classDeclaration.annotations.first {
             it.shortName.asString() == Orchestration::class.asClassName().simpleName
         }.arguments
         val baseName = arguments[0].value as String
+        val packageName = classDeclaration.packageName.asString() + ".${baseName.replaceFirstChar(Char::lowercase)}"
         val errorClass = arguments[1].value as KSType
         val viewStateClassName = ClassName(packageName, "${baseName}State")
         val errorClassName = errorClass.toClassName()
@@ -60,7 +60,7 @@ class HelpersGenerator(
             classDeclaration.getAllProperties()
                 .filter { it.isData() || it.isPagingContent() }
                 .forEach { property ->
-                    addImport(packageName, "${baseName}SideEffects.CouldNotLoad${property.upperCaseSimpleName()}")
+                    addImport(classDeclaration.packageName.asString(), "sideeffects.${property.upperCaseSimpleName()}SideEffects")
                     addFunction(
                         loadFunction(
                             property,
@@ -74,7 +74,7 @@ class HelpersGenerator(
 
             val sideEffects = classDeclaration.annotations.first().arguments[2].value as List<KSType>
             sideEffects.forEach {
-                it.toClassName()
+                addImport(classDeclaration.packageName.asString(), "sideeffects.${it.toClassName().simpleName}SideEffects")
                 addFunction(
                     sideEffectFunction(
                         it.toClassName(),
@@ -146,7 +146,7 @@ private fun loadFunction(
                     is AsyncData.Failure -> StateUpdate {
                        it.copy(
                             $name = it.$name.copy(isLoading = false),
-                            sideEffects = it.sideEffects + CouldNotLoad${name.replaceFirstChar(Char::uppercase)}(Random.nextLong(), newValue.error)
+                            sideEffects = it.sideEffects + ${name.replaceFirstChar(Char::uppercase)}SideEffects.CouldNotBeLoaded(Random.nextLong(), newValue.error)
                         )
                     }
                 }
@@ -186,17 +186,17 @@ private fun sideEffectFunction(
                 when (newValue) {
                     is AsyncData.Loading -> StateUpdate {
                         it.copy(
-                            sideEffects = it.sideEffects + ${baseName}SideEffects.WaitingFor${trigger.simpleName}(Random.nextLong())
+                            sideEffects = it.sideEffects + ${trigger.simpleName}SideEffects.Waiting(Random.nextLong())
                         )
                     }
                     is AsyncData.Success -> StateUpdate {
                         it.copy(
-                            sideEffects = it.sideEffects + ${baseName}SideEffects.${trigger.simpleName}Succeeded(Random.nextLong())
+                            sideEffects = it.sideEffects + ${trigger.simpleName}SideEffects.Succeeded(Random.nextLong())
                         )
                     }
                     is AsyncData.Failure -> StateUpdate {
                         it.copy(
-                            sideEffects = it.sideEffects + ${baseName}SideEffects.${trigger.simpleName}Failed(Random.nextLong())
+                            sideEffects = it.sideEffects + ${trigger.simpleName}SideEffects.Failed(Random.nextLong())
                         )
                     }
                 }

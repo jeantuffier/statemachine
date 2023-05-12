@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.jeantuffier"
-version = "0.2.0-dev7"
+version = "0.2.0-dev9"
 
 repositories {
     google()
@@ -46,7 +46,7 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
                 implementation("io.arrow-kt:arrow-core:$arrowVersion")
             }
-            kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin")
+            kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin/")
         }
         val commonTest by getting {
             dependencies {

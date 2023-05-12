@@ -1,7 +1,14 @@
-package com.jeantuffier.statemachine
+package com.jeantuffier.statemachine.movieScreen
 
 import app.cash.turbine.test
 import arrow.core.Either
+import com.jeantuffier.statemachine.Actor
+import com.jeantuffier.statemachine.AppError
+import com.jeantuffier.statemachine.Comment
+import com.jeantuffier.statemachine.LoadComments
+import com.jeantuffier.statemachine.LoadData
+import com.jeantuffier.statemachine.Movie
+import com.jeantuffier.statemachine.SaveAsFavorite
 import com.jeantuffier.statemachine.orchestrate.Available
 import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
@@ -9,14 +16,16 @@ import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
 import com.jeantuffier.statemachine.orchestrate.Page
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.jeantuffier.statemachine.sideeffects.ActorsSideEffects
+import com.jeantuffier.statemachine.sideeffects.CommentsSideEffects
+import com.jeantuffier.statemachine.sideeffects.MovieSideEffects
+import com.jeantuffier.statemachine.sideeffects.SaveAsFavoriteSideEffects
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MovieScreenReducerTest {
 
     @Test
@@ -107,7 +116,7 @@ class MovieScreenReducerTest {
                 state.movie,
             )
             assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadMovie)
+            assertTrue(state.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
 
             state = awaitItem()(state)
             assertEquals(
@@ -126,7 +135,7 @@ class MovieScreenReducerTest {
                 state.actors,
             )
             assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadMovie)
+            assertTrue(state.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
 
             state = awaitItem()(state)
             assertEquals(
@@ -151,7 +160,7 @@ class MovieScreenReducerTest {
                 state.actors,
             )
             assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadMovie)
+            assertTrue(state.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
 
             awaitComplete()
         }
@@ -214,7 +223,7 @@ class MovieScreenReducerTest {
                 state.actors,
             )
             assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadActors)
+            assertTrue(state.sideEffects.first() is ActorsSideEffects.CouldNotBeLoaded)
 
             awaitComplete()
         }
@@ -284,7 +293,7 @@ class MovieScreenReducerTest {
                 state.comments,
             )
             assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadComments)
+            assertTrue(state.sideEffects.first() is CommentsSideEffects.CouldNotBeLoaded)
 
             awaitComplete()
         }
@@ -298,11 +307,11 @@ class MovieScreenReducerTest {
         reducer(input).test {
             state = awaitItem()(state)
             assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)
+            assertTrue(state.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
 
             state = awaitItem()(state)
             assertEquals(2, state.sideEffects.size)
-            assertTrue(state.sideEffects[1] is MovieScreenSideEffects.SaveAsFavoriteSucceeded)
+            assertTrue(state.sideEffects[1] is SaveAsFavoriteSideEffects.Succeeded)
 
             awaitComplete()
         }
@@ -318,11 +327,11 @@ class MovieScreenReducerTest {
         reducer(input).test {
             state = awaitItem()(state)
             assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)
+            assertTrue(state.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
 
             state = awaitItem()(state)
             assertEquals(2, state.sideEffects.size)
-            assertTrue(state.sideEffects[1] is MovieScreenSideEffects.SaveAsFavoriteFailed)
+            assertTrue(state.sideEffects[1] is SaveAsFavoriteSideEffects.Failed)
 
             awaitComplete()
         }
@@ -331,10 +340,10 @@ class MovieScreenReducerTest {
     @Test
     fun sideEffectHandledShouldSucceed() = runTest {
         val reducer = createReducer()
-        val sideEffect = MovieScreenSideEffects.WaitingForSaveAsFavorite(1)
+        val sideEffect = SaveAsFavoriteSideEffects.Waiting(1)
         val input = MovieScreenAction.SideEffectHandled(sideEffect)
         var state = MovieScreenState(
-            sideEffects = listOf(MovieScreenSideEffects.WaitingForSaveAsFavorite(1)),
+            sideEffects = listOf(SaveAsFavoriteSideEffects.Waiting(1)),
         )
         reducer(input).test {
             state = awaitItem()(state)

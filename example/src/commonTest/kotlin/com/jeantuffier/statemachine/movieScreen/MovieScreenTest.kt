@@ -1,13 +1,23 @@
-package com.jeantuffier.statemachine
+package com.jeantuffier.statemachine.movieScreen
 
 import app.cash.turbine.test
 import arrow.core.Either
+import com.jeantuffier.statemachine.Actor
+import com.jeantuffier.statemachine.AppError
+import com.jeantuffier.statemachine.Comment
+import com.jeantuffier.statemachine.LoadComments
+import com.jeantuffier.statemachine.LoadData
+import com.jeantuffier.statemachine.Movie
+import com.jeantuffier.statemachine.SaveAsFavorite
 import com.jeantuffier.statemachine.orchestrate.Available
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
 import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
 import com.jeantuffier.statemachine.orchestrate.Page
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import com.jeantuffier.statemachine.sideeffects.ActorsSideEffects
+import com.jeantuffier.statemachine.sideeffects.CommentsSideEffects
+import com.jeantuffier.statemachine.sideeffects.MovieSideEffects
+import com.jeantuffier.statemachine.sideeffects.SaveAsFavoriteSideEffects
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -20,7 +30,6 @@ import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class MovieScreenTest {
     private val testDispatcher = StandardTestDispatcher()
     private val testScope = TestScope(testDispatcher)
@@ -97,14 +106,14 @@ class MovieScreenTest {
             assertEquals(1, next.sideEffects.size)
             assertEquals(null, next.movie.value)
             assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadMovie)
+            assertTrue(next.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
 
             next = awaitItem()
             assertFalse(next.movie.isLoading)
             assertTrue(next.actors.isLoading)
             assertTrue(next.actors.pages.isEmpty())
             assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadMovie)
+            assertTrue(next.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
 
             next = awaitItem()
             assertFalse(next.actors.isLoading)
@@ -157,7 +166,7 @@ class MovieScreenTest {
             assertFalse(next.actors.isLoading)
             assertTrue(next.actors.pages.isEmpty())
             assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadActors)
+            assertTrue(next.sideEffects.first() is ActorsSideEffects.CouldNotBeLoaded)
             assertFalse(next.actors.hasLoadedEverything())
         }
     }
@@ -209,7 +218,7 @@ class MovieScreenTest {
             assertFalse(next.comments.isLoading)
             assertEquals(1, next.sideEffects.size)
             assertTrue(next.actors.pages.isEmpty())
-            assertTrue(next.sideEffects.first() is MovieScreenSideEffects.CouldNotLoadComments)
+            assertTrue(next.sideEffects.first() is CommentsSideEffects.CouldNotBeLoaded)
             assertFalse(next.comments.hasLoadedEverything())
         }
     }
@@ -224,7 +233,7 @@ class MovieScreenTest {
 
             var next = awaitItem()
             assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)
+            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
 
             defaultStateMachine.reduce(MovieScreenAction.SideEffectHandled(next.sideEffects.first()))
             next = awaitItem()
@@ -232,7 +241,7 @@ class MovieScreenTest {
 
             next = awaitItem()
             assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieScreenSideEffects.SaveAsFavoriteSucceeded)
+            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Succeeded)
         }
     }
 
@@ -249,11 +258,11 @@ class MovieScreenTest {
 
             var next = awaitItem()
             assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)
+            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
 
             next = awaitItem()
             assertEquals(2, next.sideEffects.size)
-            assertTrue(next.sideEffects[1] is MovieScreenSideEffects.SaveAsFavoriteFailed)
+            assertTrue(next.sideEffects[1] is SaveAsFavoriteSideEffects.Failed)
         }
     }
 
@@ -267,11 +276,11 @@ class MovieScreenTest {
 
             var next = awaitItem()
             assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieScreenSideEffects.WaitingForSaveAsFavorite)
+            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
 
             next = awaitItem()
             assertEquals(2, next.sideEffects.size)
-            assertTrue(next.sideEffects[1] is MovieScreenSideEffects.SaveAsFavoriteSucceeded)
+            assertTrue(next.sideEffects[1] is SaveAsFavoriteSideEffects.Succeeded)
         }
     }
 

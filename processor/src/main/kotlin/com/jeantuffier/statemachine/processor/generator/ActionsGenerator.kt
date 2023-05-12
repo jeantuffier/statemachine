@@ -12,6 +12,7 @@ import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.Orchestration
 import com.jeantuffier.statemachine.orchestrate.SideEffect
+import com.jeantuffier.statemachine.orchestrate.SideEffectAction
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -32,10 +33,10 @@ class ActionsGenerator(
 ) {
 
     fun generateActions(classDeclaration: KSClassDeclaration) {
-        val packageName = classDeclaration.packageName.asString()
         val baseName = classDeclaration.annotations.first {
             it.shortName.asString() == Orchestration::class.asClassName().simpleName
         }.arguments.first().value as String
+        val packageName = classDeclaration.packageName.asString() + ".${baseName.replaceFirstChar(Char::lowercase)}"
         val fileName = "${baseName}Action"
 
         val eventsToAdd = classDeclaration.eventsToAdd()
@@ -92,23 +93,22 @@ class ActionsGenerator(
         property.type.resolve().toClassName() == OrchestratedPage::class.asClassName()
 
     private fun addSealedElement(
-        action: KSClassDeclaration,
+        classDeclaration: KSClassDeclaration,
         superType: TypeName,
     ): TypeSpec {
-        val constructorParameters = action.getAllProperties().toList()
-        val isAction = action.annotations.firstOrNull()?.shortName?.asString() == Action::class.java.simpleName
-
-        val builder = if (action.getAllProperties().toList().isEmpty()) {
-            TypeSpec.objectBuilder(action.simpleName.asString())
+        val constructorParameters = classDeclaration.getAllProperties().toList()
+        val builder = if (classDeclaration.getAllProperties().toList().isEmpty()) {
+            TypeSpec.objectBuilder(classDeclaration.simpleName.asString())
         } else {
-            TypeSpec.classBuilder(action.simpleName.asString())
+            TypeSpec.classBuilder(classDeclaration.simpleName.asString())
                 .primaryConstructor(constructor(constructorParameters))
-                .addProperties(properties(constructorParameters, isAction))
+                .addProperties(properties(constructorParameters, classDeclaration.isAction()))
         }
         builder.superclass(superType)
 
-        val typeVariables = action.typeParameters.map { it.toTypeVariableName() }
-        val baseSuperInterface = ClassName(action.packageName.asString(), action.simpleName.asString())
+        val typeVariables = classDeclaration.typeParameters.map { it.toTypeVariableName() }
+        val baseSuperInterface =
+            ClassName(classDeclaration.packageName.asString(), classDeclaration.simpleName.asString())
         val superInterface = if (typeVariables.isNotEmpty()) {
             typeVariables.forEach { builder.addTypeVariable(it) }
             baseSuperInterface.parameterizedBy(typeVariables)
@@ -118,6 +118,11 @@ class ActionsGenerator(
         builder.addSuperinterface(superInterface)
 
         return builder.build()
+    }
+
+    private fun KSClassDeclaration.isAction(): Boolean {
+        val shortName = annotations.firstOrNull()?.shortName?.asString()
+        return shortName == Action::class.java.simpleName || shortName == SideEffectAction::class.java.simpleName
     }
 
     private fun constructor(constructorParameters: List<KSPropertyDeclaration>) =
