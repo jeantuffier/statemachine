@@ -6,11 +6,10 @@ plugins {
     kotlin("multiplatform")
     id("maven-publish")
     id("com.rickclephas.kmp.nativecoroutines")
-    id("org.jmailen.kotlinter")
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.2.0-dev9"
+version = "0.2.0-dev10"
 
 repositories {
     google()
@@ -48,6 +47,12 @@ kotlin {
                     enabled.set(true)
                 }
             }
+            testTask {
+                useMocha {
+                    timeout = "15s"
+                }
+            }
+            binaries.executable()
         }
     }
 
@@ -69,19 +74,23 @@ kotlin {
         }
 
         val iosMain by getting
-        val iosTest by getting
+        val iosTest by getting {
+            dependsOn(commonTest)
+        }
 
         val jvmMain by getting
         val jvmTest by getting {
             dependencies {
-                implementation(kotlin("test"))
+                implementation(kotlin("test-junit"))
+                implementation("junit:junit:4.13.2")
             }
         }
 
         val jsMain by getting
         val jsTest by getting {
             dependencies {
-                implementation(kotlin("test-js"))
+                implementation(kotlin("test-junit"))
+                implementation("junit:junit:4.13.2")
             }
         }
     }

@@ -1,26 +1,24 @@
 package com.jeantuffier.statemachine.core
 
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutineScope
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.channels.ReceiveChannel
-import kotlinx.coroutines.channels.produce
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlin.coroutines.CoroutineContext
 
 /**
  * A [StateMachine] should be used to extract duplicated business logic into a common package.
  *
- * It is designed to work with a unidirectional pattern (UDF). The client should use [Input]
- * objects to trigger the execution of specific logic and collect [Ouput] from the state flow.
+ * It is designed to work with a unidirectional pattern (UDF). The client should use input
+ * objects to trigger the execution of specific logic and collect outputs from the state flow.
  *
  * The state machine exposes a [StateFlow] to retain its current state and be able to
  * emit new states to the client after reducing an input.
@@ -33,101 +31,52 @@ interface StateMachine<Input, Output> {
     val state: StateFlow<Output>
 
     /**
-     * Clients should call this function whenever an [Action] is triggered by a user.
+     * Clients should call this function whenever an [Input] is triggered by a user.
      * @param input: The input triggered by the user.
      */
     fun <T : Input> reduce(input: T)
 
+    /**
+     * Clients should call this function whenever an [Input] triggered by [reduce] needs to be cancelled.
+     * @param input: The input used to trigger a job to should be cancelled.
+     */
+    fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>)
+
     suspend fun close()
 }
 
-/**
- * This class facilitate the implementation of a [StateMachine].
- * It already contains a [MutableStateFlow] to update the state machine state
- * and is used to override [StateMachine.state].
- *
- * @param initialValue: the value used to initialize the state.
- * @param scope: the coroutine scope used by the state machine to run sub coroutines
- * @param stateMachineCore: a function matching inputs with business logic to execute. The easiest way
- * to do so is by using a `when` statement.
- */
-
-/*class StateMachineBuilder<Input, Output>(
+fun <Input : Any, Output> StateMachine(
     initialValue: Output,
-    coroutineContext: CoroutineContext,
-    private val reducer: Reducer<Input, Output>,
-) : StateMachine<Input, Output> {
-
-    private val job = SupervisorJob()
-
-    @NativeCoroutineScope
-    private val coroutineScope = CoroutineScope(job + coroutineContext)
-
-    private val _state: MutableStateFlow<Output> = MutableStateFlow(initialValue)
-    override val state: StateFlow<Output> = _state.asStateFlow()
-
-    override fun <T : Input> reduce(input: T) {
-        coroutineScope.launch(job) { reducer(input, _state) }
-    }
-
-    override suspend fun close() {
-        job.cancel()
-        job.join()
-    }
-}*/
-
-class StateMachineConfig(
-    val sendCapacity: Int = Channel.UNLIMITED,
-    val receiveCapacity: Int = 10,
-)
-
-@OptIn(ExperimentalCoroutinesApi::class)
-fun <Input, Output> StateMachine(
-    initialValue: Output,
-    coroutineContext: CoroutineContext,
+    coroutineDispatcher: CoroutineDispatcher,
     reducer: Reducer<Input, Output>,
-    stateMachineConfig: StateMachineConfig = StateMachineConfig(),
 ) = object : StateMachine<Input, Output> {
 
     private val job = SupervisorJob()
 
     @NativeCoroutineScope
-    private val coroutineScope = CoroutineScope(job + coroutineContext)
-
-    private val inputChannel = Channel<Input>()
+    private val coroutineScope = CoroutineScope(job + coroutineDispatcher)
 
     private val _state = MutableStateFlow(initialValue)
     override val state = _state.asStateFlow()
 
-    init {
-        coroutineScope.launch {
-            val stateUpdateChannel = produceStateUpdate()
-            repeat(stateMachineConfig.receiveCapacity) { launchStateUpdateProcessor(stateUpdateChannel) }
-        }
-    }
-
-    private fun CoroutineScope.produceStateUpdate(): ReceiveChannel<StateUpdate<Output>> =
-        produce(capacity = stateMachineConfig.sendCapacity) {
-            for (input in inputChannel) {
-                launch {
-                    reducer(input).collect {
-                        send(it)
-                    }
-                }
-            }
-        }
-
-    private fun CoroutineScope.launchStateUpdateProcessor(
-        channel: ReceiveChannel<StateUpdate<Output>>,
-    ) = launch {
-        for (stateUpdate in channel) {
-            _state.update { stateUpdate(state.value) }
-        }
-    }
+    private val jobRegistry: MutableMap<Int, Job> = mutableMapOf()
 
     override fun <T : Input> reduce(input: T) {
+        input.hashCode()
+        jobRegistry[input.hashCode()]?.cancel()
+        jobRegistry[input.hashCode()] = coroutineScope.launch {
+            reducer(input)
+                .cancellable()
+                .collect {
+                    _state.update { it(state.value) }
+                }
+        }
+    }
+
+    override fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>) {
+        jobRegistry[input.hashCode()]?.cancel()
         coroutineScope.launch {
-            inputChannel.send(input)
+            _state.update { rollback(state.value) }
         }
     }
 
