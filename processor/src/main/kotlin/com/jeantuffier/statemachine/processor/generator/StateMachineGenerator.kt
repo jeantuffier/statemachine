@@ -6,13 +6,13 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.jeantuffier.statemachine.core.StateMachine
-import com.jeantuffier.statemachine.orchestrate.Orchestrated
-import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
 import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
-import com.jeantuffier.statemachine.orchestrate.Orchestration
 import com.jeantuffier.statemachine.orchestrate.Page
+import com.jeantuffier.statemachine.orchestrate.Orchestrated
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
+import com.jeantuffier.statemachine.orchestrate.Orchestration
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -22,7 +22,7 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
-import kotlin.coroutines.CoroutineContext
+import kotlinx.coroutines.CoroutineDispatcher
 
 class StateMachineGenerator(
     private val logger: KSPLogger,
@@ -52,7 +52,7 @@ class StateMachineGenerator(
                     .addParameters(orchestratedParameters(classDeclaration, error.toClassName()))
                     .addParameters(sideEffectParameters(classDeclaration, error.toClassName()))
                     .addParameter(
-                        ParameterSpec.builder("coroutineContext", CoroutineContext::class.asClassName())
+                        ParameterSpec.builder("coroutineDispatcher", CoroutineDispatcher::class.asClassName())
                             .build(),
                     )
                     .returns(returnType)
@@ -60,7 +60,7 @@ class StateMachineGenerator(
                         """
                             return StateMachine(
                                 initialValue = $stateClass(),
-                                coroutineContext = coroutineContext,
+                                coroutineDispatcher = coroutineDispatcher,
                                 reducer = ${baseName.replaceFirstChar(Char::lowercaseChar)}Reducer(
                                     ${stateMachineReducerParameter(classDeclaration).joinToString(",\n")}
                                 )

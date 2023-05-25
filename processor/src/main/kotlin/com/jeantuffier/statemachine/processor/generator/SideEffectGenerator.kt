@@ -5,9 +5,9 @@ import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
-import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -128,7 +128,4 @@ class SideEffectGenerator(
 
     private fun KSPropertyDeclaration.isPagingContent(): Boolean =
         type.resolve().toClassName() == OrchestratedPage::class.asClassName()
-
-    private fun KSPropertyDeclaration.upperCaseSimpleName(): String =
-        simpleName.asString().replaceFirstChar(Char::uppercaseChar)
 }

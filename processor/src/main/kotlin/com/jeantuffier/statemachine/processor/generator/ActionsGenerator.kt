@@ -7,11 +7,11 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeParameter
+import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.jeantuffier.statemachine.orchestrate.Action
 import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.jeantuffier.statemachine.orchestrate.SideEffect
 import com.jeantuffier.statemachine.orchestrate.SideEffectAction
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec

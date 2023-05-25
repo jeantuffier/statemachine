@@ -8,11 +8,10 @@ plugins {
     id("maven-publish")
     id("com.rickclephas.kmp.nativecoroutines")
     kotlin("plugin.serialization")
-    id("org.jmailen.kotlinter")
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.2.0-dev9"
+version = "0.2.0-dev10"
 
 repositories {
     google()
@@ -56,6 +55,7 @@ kotlin {
     sourceSets {
         val commonMain by getting {
             dependencies {
+                implementation(project(":core"))
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
                 implementation("io.arrow-kt:arrow-core:$arrowVersion")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
@@ -72,9 +72,24 @@ kotlin {
         }
 
         val iosMain by getting
-        val iosTest by getting
+        val iosTest by getting {
+            dependsOn(commonTest)
+        }
 
         val jvmMain by getting
-        val jvmTest by getting
+        val jvmTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit"))
+                implementation("junit:junit:4.13.2")
+            }
+        }
+
+        val jsMain by getting
+        val jsTest by getting {
+            dependencies {
+                implementation(kotlin("test-junit"))
+                implementation("junit:junit:4.13.2")
+            }
+        }
     }
 }
