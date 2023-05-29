@@ -128,7 +128,4 @@ class SideEffectGenerator(
 
     private fun KSPropertyDeclaration.isPagingContent(): Boolean =
         type.resolve().toClassName() == OrchestratedPage::class.asClassName()
-
-    private fun KSPropertyDeclaration.upperCaseSimpleName(): String =
-        simpleName.asString().replaceFirstChar(Char::uppercaseChar)
 }

@@ -2,7 +2,6 @@ package com.jeantuffier.statemachine.core
 
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutineScope
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
@@ -11,6 +10,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.cancellable
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -40,12 +40,12 @@ interface StateMachine<Input, Output> {
      * Clients should call this function whenever an [Input] triggered by [reduce] needs to be cancelled.
      * @param input: The input used to trigger a job to should be cancelled.
      */
-    fun <T : Input> cancel(input: T)
+    fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>)
 
     suspend fun close()
 }
 
-fun <Input, Output> StateMachine(
+fun <Input : Any, Output> StateMachine(
     initialValue: Output,
     coroutineDispatcher: CoroutineDispatcher,
     reducer: Reducer<Input, Output>,
@@ -62,15 +62,21 @@ fun <Input, Output> StateMachine(
     private val jobRegistry: MutableMap<String, Job> = mutableMapOf()
 
     override fun <T : Input> reduce(input: T) {
-        jobRegistry[input.toString()] = coroutineScope.launch {
-            reducer(input).collect {
-                _state.update { it(state.value) }
-            }
+        jobRegistry[input::class.simpleName ?: ""]?.cancel()
+        jobRegistry[input::class.simpleName ?: ""] = coroutineScope.launch {
+            reducer(input)
+                .cancellable()
+                .collect {
+                    _state.update { it(state.value) }
+                }
         }
     }
 
-    override fun <T : Input> cancel(input: T) {
-        jobRegistry[input.toString()]?.cancel()
+    override fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>) {
+        jobRegistry[input::class.simpleName ?: ""]?.cancel()
+        coroutineScope.launch {
+            _state.update { rollback(state.value) }
+        }
     }
 
     override suspend fun close() {

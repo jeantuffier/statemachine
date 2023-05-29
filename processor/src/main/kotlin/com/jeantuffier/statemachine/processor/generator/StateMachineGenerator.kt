@@ -22,6 +22,7 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlin.coroutines.CoroutineContext
 
 class StateMachineGenerator(
@@ -52,7 +53,7 @@ class StateMachineGenerator(
                     .addParameters(orchestratedParameters(classDeclaration, error.toClassName()))
                     .addParameters(sideEffectParameters(classDeclaration, error.toClassName()))
                     .addParameter(
-                        ParameterSpec.builder("coroutineContext", CoroutineContext::class.asClassName())
+                        ParameterSpec.builder("coroutineDispatcher", CoroutineDispatcher::class.asClassName())
                             .build(),
                     )
                     .returns(returnType)
@@ -60,7 +61,7 @@ class StateMachineGenerator(
                         """
                             return StateMachine(
                                 initialValue = $stateClass(),
-                                coroutineContext = coroutineContext,
+                                coroutineDispatcher = coroutineDispatcher,
                                 reducer = ${baseName.replaceFirstChar(Char::lowercaseChar)}Reducer(
                                     ${stateMachineReducerParameter(classDeclaration).joinToString(",\n")}
                                 )

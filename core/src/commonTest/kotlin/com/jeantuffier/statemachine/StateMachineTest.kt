@@ -67,10 +67,10 @@ class StateMachineTest {
             initialValue = MovieScreenState(),
             coroutineDispatcher = StandardTestDispatcher(testScheduler),
             reducer = movieScreenReducer(
-                onLoadMovie = { action ->
+                onLoadMovie = { _ ->
                     flow {
                         emit { it.copy(isLoadingMovie = true) }
-                        val movie = loadMovie(action)
+                        val movie = loadMovie()
                         emit { it.copy(isLoadingMovie = false, movie = movie) }
                     }
                 },
@@ -93,7 +93,7 @@ class StateMachineTest {
         }
     }
 
-    private suspend fun loadMovie(action: MovieScreenStateActions.LoadMovie): Movie {
+    private suspend fun loadMovie(): Movie {
         delay(100)
         return Movie("1", "Movie1", "Thriller")
     }
@@ -105,10 +105,10 @@ class StateMachineTest {
             coroutineDispatcher = StandardTestDispatcher(testScheduler),
             reducer = movieScreenReducer(
                 onLoadMovie = { _ -> flowOf() },
-                onLoadActors = { action ->
+                onLoadActors = { _ ->
                     flow {
                         emit { it.copy(isLoadingActors = true) }
-                        val actors = loadActors(action)
+                        val actors = loadActors()
                         emit { it.copy(isLoadingActors = false, actors = actors) }
                     }
                 },
@@ -137,7 +137,7 @@ class StateMachineTest {
         }
     }
 
-    private suspend fun loadActors(action: MovieScreenStateActions.LoadActors): List<Actor> {
+    private suspend fun loadActors(): List<Actor> {
         delay(300)
         return listOf(
             Actor("1", "actor1", "actor1"),

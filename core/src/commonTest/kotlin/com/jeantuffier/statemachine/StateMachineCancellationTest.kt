@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.jeantuffier.statemachine.core.StateMachine
 import com.jeantuffier.statemachine.core.StateUpdate
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -15,23 +16,23 @@ import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
 data class MovieOverview(val id: String, val name: String)
+
 data class Movie(val id: String, val name: String, val poster: String, val actors: List<String>)
 
-// The state of our screen
 data class MovieScreenState(
     val isLoading: Boolean = false,
     val movies: List<MovieOverview> = emptyList(),
     val selectedMovie: Movie? = null,
 )
 
-// The actions that a user can execute
 sealed class MovieScreenAction {
     object LoadMovies : MovieScreenAction()
     class SelectMovie(val id: String) : MovieScreenAction()
     object CloseMovieDetails : MovieScreenAction()
 }
 
-class SimpleStateMachineTest {
+@OptIn(ExperimentalCoroutinesApi::class)
+class StateMachineCancellationTest {
 
     private val movies = listOf(
         MovieOverview("1", "movie1"),
@@ -58,7 +59,7 @@ class SimpleStateMachineTest {
                     MovieOverview("2", "movie2"),
                     MovieOverview("3", "movie3"),
                 ),
-                actual = item.movies
+                actual = item.movies,
             )
 
             ensureAllEventsConsumed()
@@ -119,7 +120,7 @@ class SimpleStateMachineTest {
     }
 
     @Test
-    fun cancelLoadMovieDetail() = runTest {
+    fun cancelLoadMovieDetails() = runTest {
         val stateMachine = movieScreenStateMachine(StandardTestDispatcher(testScheduler))
         stateMachine.state.test {
             assertEquals(MovieScreenState(), awaitItem())
@@ -127,35 +128,14 @@ class SimpleStateMachineTest {
             stateMachine.reduce(MovieScreenAction.LoadMovies)
             assertTrue(awaitItem().isLoading)
 
-            var next = awaitItem()
+            val next = awaitItem()
             assertFalse(next.isLoading)
             assertEquals(movies, next.movies)
 
             stateMachine.reduce(MovieScreenAction.SelectMovie("1"))
-            stateMachine.cancel(MovieScreenAction.SelectMovie("1"))
-            stateMachine.reduce(MovieScreenAction.CloseMovieDetails)
-
-            // update from MovieScreenAction.SelectMovie
-            next = awaitItem()
-            assertEquals(
-                expected = MovieScreenState(
-                    isLoading = true,
-                    movies = movies,
-                    selectedMovie = null,
-                ),
-                actual = next,
-            )
-
-            // update from MovieScreenAction.CloseMovieDetails
-            next = awaitItem()
-            assertEquals(
-                expected = MovieScreenState(
-                    isLoading = false,
-                    movies = movies,
-                    selectedMovie = null,
-                ),
-                actual = next,
-            )
+            stateMachine.cancel(MovieScreenAction.SelectMovie("1")) {
+                it.copy(isLoading = false, selectedMovie = null)
+            }
 
             ensureAllEventsConsumed()
         }
@@ -180,14 +160,16 @@ class SimpleStateMachineTest {
         emit { it.copy(isLoading = false, movies = movies) }
     }
 
-    private suspend fun onSelectMovie(id: String?): Flow<StateUpdate<MovieScreenState>> = flow {
-        val movie = if (id == null) {
-            null
-        } else {
-            emit { it.copy(isLoading = true) }
-            delay(500) // pretend it takes a while to load a single movie
-            movie
+    private suspend fun onSelectMovie(id: String?): Flow<StateUpdate<MovieScreenState>> =
+        flow {
+            val movie = if (id == null) {
+                null
+            } else {
+                delay(100)
+                emit { it.copy(isLoading = true) }
+                delay(500) // pretend it takes a while to load a single movie
+                movie
+            }
+            emit { it.copy(isLoading = false, selectedMovie = movie) }
         }
-        emit { it.copy(isLoading = false, selectedMovie = movie) }
-    }
 }
