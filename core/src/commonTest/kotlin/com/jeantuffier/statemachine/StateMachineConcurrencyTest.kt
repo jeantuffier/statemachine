@@ -5,7 +5,6 @@ import com.jeantuffier.statemachine.core.Reducer
 import com.jeantuffier.statemachine.core.StateMachine
 import com.jeantuffier.statemachine.core.StateUpdate
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -27,7 +26,11 @@ class StateMachineConcurrencyTest {
             coroutineDispatcher = StandardTestDispatcher(testScheduler),
             reducer = Reducer<Command, Int> { action ->
                 when (action) {
-                    Command.Command1 -> flowOf(StateUpdate { 1 })
+                    Command.Command1 -> {
+                        delay(1)
+                        flowOf(StateUpdate { 1 })
+                    }
+
                     Command.Command2 -> {
                         delay(100)
                         flowOf(StateUpdate { 100 })
@@ -40,8 +43,7 @@ class StateMachineConcurrencyTest {
                 }
             },
         )
-        val flow: Flow<Int> = stateMachine.state
-        flow.test {
+        stateMachine.state.test {
             assertEquals(0, awaitItem())
 
             stateMachine.reduce(Command.Command3)

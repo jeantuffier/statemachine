@@ -7,7 +7,6 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.validate
 import com.jeantuffier.statemachine.orchestrate.Action
-import com.jeantuffier.statemachine.orchestrate.AsyncData
 import com.jeantuffier.statemachine.orchestrate.Orchestrated
 import com.jeantuffier.statemachine.orchestrate.Orchestration
 import com.squareup.kotlinpoet.asClassName

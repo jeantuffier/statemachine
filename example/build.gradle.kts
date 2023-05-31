@@ -5,11 +5,10 @@ val turbineVersion: String by project
 plugins {
     kotlin("multiplatform")
     id("com.google.devtools.ksp")
-    id("org.jmailen.kotlinter")
 }
 
 group = "com.jeantuffier"
-version = "0.2.0-dev9"
+version = "0.2.0-dev10"
 
 repositories {
     google()
@@ -72,9 +71,8 @@ kotlin {
             }
         }
 
-
         val jsMain by getting
-        val jsTest  by getting {
+        val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
                 implementation("junit:junit:4.13.2")
@@ -93,5 +91,4 @@ tasks.named("build") {
 
 tasks.named("compileKotlinJvm") {
     dependsOn(tasks.named("kspCommonMainKotlinMetadata"))
-    dependsOn(tasks.named("formatKotlinGeneratedByKspCommonMainKotlinMetadata"))
 }

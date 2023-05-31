@@ -4,7 +4,6 @@ import app.cash.turbine.test
 import com.jeantuffier.statemachine.core.StateMachine
 import com.jeantuffier.statemachine.core.StateUpdate
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -31,7 +30,6 @@ sealed class MovieScreenAction {
     object CloseMovieDetails : MovieScreenAction()
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 class StateMachineCancellationTest {
 
     private val movies = listOf(
@@ -165,7 +163,6 @@ class StateMachineCancellationTest {
             val movie = if (id == null) {
                 null
             } else {
-                delay(100)
                 emit { it.copy(isLoading = true) }
                 delay(500) // pretend it takes a while to load a single movie
                 movie

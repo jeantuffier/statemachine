@@ -59,11 +59,12 @@ fun <Input : Any, Output> StateMachine(
     private val _state = MutableStateFlow(initialValue)
     override val state = _state.asStateFlow()
 
-    private val jobRegistry: MutableMap<String, Job> = mutableMapOf()
+    private val jobRegistry: MutableMap<Int, Job> = mutableMapOf()
 
     override fun <T : Input> reduce(input: T) {
-        jobRegistry[input::class.simpleName ?: ""]?.cancel()
-        jobRegistry[input::class.simpleName ?: ""] = coroutineScope.launch {
+        input.hashCode()
+        jobRegistry[input.hashCode()]?.cancel()
+        jobRegistry[input.hashCode()] = coroutineScope.launch {
             reducer(input)
                 .cancellable()
                 .collect {
@@ -73,7 +74,7 @@ fun <Input : Any, Output> StateMachine(
     }
 
     override fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>) {
-        jobRegistry[input::class.simpleName ?: ""]?.cancel()
+        jobRegistry[input.hashCode()]?.cancel()
         coroutineScope.launch {
             _state.update { rollback(state.value) }
         }

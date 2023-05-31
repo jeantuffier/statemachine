@@ -6,11 +6,10 @@ plugins {
     kotlin("multiplatform")
     id("maven-publish")
     id("com.rickclephas.kmp.nativecoroutines")
-    id("org.jmailen.kotlinter")
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.2.0-dev9"
+version = "0.2.0-dev10"
 
 repositories {
     google()
@@ -87,9 +86,8 @@ kotlin {
             }
         }
 
-
         val jsMain by getting
-        val jsTest  by getting {
+        val jsTest by getting {
             dependencies {
                 implementation(kotlin("test-junit"))
                 implementation("junit:junit:4.13.2")
