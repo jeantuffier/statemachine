@@ -9,20 +9,24 @@ import com.jeantuffier.statemachine.LoadComments
 import com.jeantuffier.statemachine.LoadData
 import com.jeantuffier.statemachine.Movie
 import com.jeantuffier.statemachine.SaveAsFavorite
+import com.jeantuffier.statemachine.core.StateUpdate
+import com.jeantuffier.statemachine.events.CouldNotLoadActors
+import com.jeantuffier.statemachine.events.CouldNotLoadComments
+import com.jeantuffier.statemachine.events.CouldNotLoadMovie
 import com.jeantuffier.statemachine.orchestrate.Available
-import com.jeantuffier.statemachine.orchestrate.OrchestratedData
+import com.jeantuffier.statemachine.orchestrate.Limit
+import com.jeantuffier.statemachine.orchestrate.Offset
+import com.jeantuffier.statemachine.orchestrate.OrchestratedAction
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
-import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
-import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
-import com.jeantuffier.statemachine.sideeffects.ActorsSideEffects
-import com.jeantuffier.statemachine.sideeffects.CommentsSideEffects
-import com.jeantuffier.statemachine.sideeffects.MovieSideEffects
-import com.jeantuffier.statemachine.sideeffects.SaveAsFavoriteSideEffects
+import com.jeantuffier.statemachine.orchestrate.Page
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class MovieScreenReducerTest {
@@ -30,62 +34,41 @@ class MovieScreenReducerTest {
     @Test
     fun loadDataShouldSucceed() = runTest {
         val reducer = createReducer()
-        val input = MovieScreenAction.LoadData("1", 0, 10)
-        var state = MovieScreenState()
+        val input = MovieScreenAction.LoadData("1", Offset(0), Limit(10))
+        var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
-            assertEquals(
-                MovieScreenState(movie = OrchestratedData(isLoading = true)),
-                state,
-            )
+            assertFalse(state.isFavorite)
+            assertTrue(state.movie.isLoading)
 
             state = awaitItem()(state)
-            assertEquals(
-                MovieScreenState(
-                    movie = OrchestratedData(
-                        isLoading = false,
-                        value = Movie(id = "1", title = "Movie1"),
-                    ),
-                ),
-                state,
-            )
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertEquals(state.movie.value, Movie(id = "1", title = "Movie1"))
 
             state = awaitItem()(state)
-            assertEquals(
-                MovieScreenState(
-                    movie = OrchestratedData(
-                        isLoading = false,
-                        value = Movie(id = "1", title = "Movie1"),
-                    ),
-                    actors = OrchestratedPage(
-                        available = Available(0),
-                        isLoading = true,
-                        pages = emptyMap(),
-                    ),
-                ),
-                state,
-            )
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertEquals(state.movie.value, Movie(id = "1", title = "Movie1"))
+            assertEquals(0, state.actors.available.value)
+            assertTrue(state.actors.isLoading)
+            assertEquals(emptyMap(), state.actors.pages)
 
             state = awaitItem()(state)
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertEquals(state.movie.value, Movie(id = "1", title = "Movie1"))
+            assertEquals(3, state.actors.available.value)
+            assertFalse(state.actors.isLoading)
             assertEquals(
-                MovieScreenState(
-                    movie = OrchestratedData(
-                        isLoading = false,
-                        value = Movie(id = "1", title = "Movie1"),
-                    ),
-                    actors = OrchestratedPage(
-                        available = Available(3),
-                        isLoading = false,
-                        pages = mapOf(
-                            0 to listOf(
-                                Actor("actor1", "actor1"),
-                                Actor("actor2", "actor2"),
-                                Actor("actor3", "actor3"),
-                            ),
-                        ),
+                mapOf(
+                    0 to listOf(
+                        Actor("actor1", "actor1"),
+                        Actor("actor2", "actor2"),
+                        Actor("actor3", "actor3"),
                     ),
                 ),
-                state,
+                state.actors.pages,
             )
 
             awaitComplete()
@@ -97,69 +80,45 @@ class MovieScreenReducerTest {
         val reducer = createReducer(
             movie = { Either.Left(AppError.SomeRandomError) },
         )
-        val input = MovieScreenAction.LoadData("1", 0, 10)
-        var state = MovieScreenState()
+        val input = MovieScreenAction.LoadData("1", Offset(0), Limit(10))
+        var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
-            assertEquals(
-                MovieScreenState(movie = OrchestratedData(isLoading = true)),
-                state,
-            )
+            assertFalse(state.isFavorite)
+            assertTrue(state.movie.isLoading)
 
             state = awaitItem()(state)
-            assertEquals(
-                OrchestratedData<Movie>(
-                    isLoading = false,
-                    value = null,
-                ),
-                state.movie,
-            )
-            assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertNull(state.movie.value)
 
             state = awaitItem()(state)
-            assertEquals(
-                OrchestratedData<Movie>(
-                    isLoading = false,
-                    value = null,
-                ),
-                state.movie,
-            )
-            assertEquals(
-                OrchestratedPage(
-                    available = Available(0),
-                    isLoading = true,
-                    pages = emptyMap(),
-                ),
-                state.actors,
-            )
-            assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertNull(state.movie.value)
+            assertEquals(0, state.actors.available.value)
+            assertTrue(state.actors.isLoading)
+            assertEquals(emptyMap(), state.actors.pages)
 
             state = awaitItem()(state)
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertNull(state.movie.value)
+            assertEquals(3, state.actors.available.value)
+            assertFalse(state.actors.isLoading)
             assertEquals(
-                OrchestratedData<Movie>(
-                    isLoading = false,
-                    value = null,
-                ),
-                state.movie,
-            )
-            assertEquals(
-                OrchestratedPage(
-                    available = Available(3),
-                    isLoading = false,
-                    pages = mapOf(
-                        0 to listOf(
-                            Actor("actor1", "actor1"),
-                            Actor("actor2", "actor2"),
-                            Actor("actor3", "actor3"),
-                        ),
+                mapOf(
+                    0 to listOf(
+                        Actor("actor1", "actor1"),
+                        Actor("actor2", "actor2"),
+                        Actor("actor3", "actor3"),
                     ),
                 ),
-                state.actors,
+                state.actors.pages,
             )
-            assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
+
+            assertNotNull(state.event)
+            assertTrue(state.event is CouldNotLoadMovie)
 
             awaitComplete()
         }
@@ -170,59 +129,36 @@ class MovieScreenReducerTest {
         val reducer = createReducer(
             actors = { Either.Left(AppError.SomeRandomError) },
         )
-        val input = MovieScreenAction.LoadData("1", 0, 10)
-        var state = MovieScreenState()
+        val input = MovieScreenAction.LoadData("1", Offset(0), Limit(10))
+        var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
-            assertEquals(
-                MovieScreenState(movie = OrchestratedData(isLoading = true)),
-                state,
-            )
+            assertFalse(state.isFavorite)
+            assertTrue(state.movie.isLoading)
 
             state = awaitItem()(state)
-            assertEquals(
-                OrchestratedData(
-                    isLoading = false,
-                    value = Movie(id = "1", title = "Movie1"),
-                ),
-                state.movie,
-            )
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertEquals(Movie(id = "1", title = "Movie1"), state.movie.value)
 
             state = awaitItem()(state)
-            assertEquals(
-                OrchestratedData(
-                    isLoading = false,
-                    value = Movie(id = "1", title = "Movie1"),
-                ),
-                state.movie,
-            )
-            assertEquals(
-                OrchestratedPage(
-                    available = Available(0),
-                    isLoading = true,
-                    pages = emptyMap(),
-                ),
-                state.actors,
-            )
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertEquals(Movie(id = "1", title = "Movie1"), state.movie.value)
+            assertEquals(0, state.actors.available.value)
+            assertTrue(state.actors.isLoading)
+            assertEquals(emptyMap(), state.actors.pages)
 
             state = awaitItem()(state)
-            assertEquals(
-                OrchestratedData(
-                    isLoading = false,
-                    value = Movie(id = "1", title = "Movie1"),
-                ),
-                state.movie,
-            )
-            assertEquals(
-                OrchestratedPage(
-                    available = Available(0),
-                    isLoading = false,
-                    pages = emptyMap(),
-                ),
-                state.actors,
-            )
-            assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is ActorsSideEffects.CouldNotBeLoaded)
+            assertFalse(state.isFavorite)
+            assertFalse(state.movie.isLoading)
+            assertEquals(Movie(id = "1", title = "Movie1"), state.movie.value)
+            assertEquals(0, state.actors.available.value)
+            assertFalse(state.actors.isLoading)
+            assertEquals(emptyMap(), state.actors.pages)
+
+            assertNotNull(state.event)
+            assertTrue(state.event is CouldNotLoadActors)
 
             awaitComplete()
         }
@@ -231,33 +167,26 @@ class MovieScreenReducerTest {
     @Test
     fun loadCommentsShouldSucceed() = runTest {
         val reducer = createReducer()
-        val input = MovieScreenAction.LoadComments("1", 0, 3)
-        var state = MovieScreenState()
+        val input = MovieScreenAction.LoadComments("1", Offset(0), Limit(3))
+        var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
-            assertEquals(
-                OrchestratedPage(
-                    available = Available(0),
-                    isLoading = true,
-                    pages = emptyMap(),
-                ),
-                state.comments,
-            )
+            assertEquals(0, state.comments.available.value)
+            assertTrue(state.comments.isLoading)
+            assertEquals(emptyMap(), state.comments.pages)
 
             state = awaitItem()(state)
+            assertEquals(3, state.comments.available.value)
+            assertFalse(state.comments.isLoading)
             assertEquals(
-                OrchestratedPage(
-                    available = Available(3),
-                    isLoading = false,
-                    pages = mapOf(
-                        0 to listOf(
-                            Comment("comment1", "content1"),
-                            Comment("comment2", "content2"),
-                            Comment("comment3", "content3"),
-                        ),
+                mapOf(
+                    0 to listOf(
+                        Comment("comment1", "content1"),
+                        Comment("comment2", "content2"),
+                        Comment("comment3", "content3"),
                     ),
                 ),
-                state.comments,
+                state.comments.pages,
             )
 
             awaitComplete()
@@ -269,30 +198,21 @@ class MovieScreenReducerTest {
         val reducer = createReducer(
             comments = { flowOf(Either.Left(AppError.SomeRandomError)) },
         )
-        val input = MovieScreenAction.LoadComments("1", 0, 3)
-        var state = MovieScreenState()
+        val input = MovieScreenAction.LoadComments("1", Offset(0), Limit(3))
+        var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
-            assertEquals(
-                OrchestratedPage(
-                    available = Available(0),
-                    isLoading = true,
-                    pages = emptyMap(),
-                ),
-                state.comments,
-            )
+            assertEquals(0, state.comments.available.value)
+            assertTrue(state.comments.isLoading)
+            assertEquals(emptyMap(), state.comments.pages)
 
             state = awaitItem()(state)
-            assertEquals(
-                OrchestratedPage(
-                    available = Available(0),
-                    isLoading = false,
-                    pages = emptyMap(),
-                ),
-                state.comments,
-            )
-            assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is CommentsSideEffects.CouldNotBeLoaded)
+            assertEquals(0, state.comments.available.value)
+            assertFalse(state.comments.isLoading)
+            assertEquals(emptyMap(), state.comments.pages)
+
+            assertNotNull(state.event)
+            assertTrue(state.event is CouldNotLoadComments)
 
             awaitComplete()
         }
@@ -302,51 +222,11 @@ class MovieScreenReducerTest {
     fun saveAsFavoriteShouldSucceed() = runTest {
         val reducer = createReducer()
         val input = MovieScreenAction.SaveAsFavorite("1")
-        var state = MovieScreenState()
+        var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
-            assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
+            assertTrue(state.isFavorite)
 
-            state = awaitItem()(state)
-            assertEquals(2, state.sideEffects.size)
-            assertTrue(state.sideEffects[1] is SaveAsFavoriteSideEffects.Succeeded)
-
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun saveAsFavoriteShouldFail() = runTest {
-        val reducer = createReducer(
-            saveAsFavorite = { Either.Left(AppError.SomeRandomError) },
-        )
-        val input = MovieScreenAction.SaveAsFavorite("1")
-        var state = MovieScreenState()
-        reducer(input).test {
-            state = awaitItem()(state)
-            assertEquals(1, state.sideEffects.size)
-            assertTrue(state.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
-
-            state = awaitItem()(state)
-            assertEquals(2, state.sideEffects.size)
-            assertTrue(state.sideEffects[1] is SaveAsFavoriteSideEffects.Failed)
-
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun sideEffectHandledShouldSucceed() = runTest {
-        val reducer = createReducer()
-        val sideEffect = SaveAsFavoriteSideEffects.Waiting(1)
-        val input = MovieScreenAction.SideEffectHandled(sideEffect)
-        var state = MovieScreenState(
-            sideEffects = listOf(SaveAsFavoriteSideEffects.Waiting(1)),
-        )
-        reducer(input).test {
-            state = awaitItem()(state)
-            assertTrue(state.sideEffects.isEmpty())
             awaitComplete()
         }
     }
@@ -386,8 +266,8 @@ class MovieScreenReducerTest {
                 ),
             )
         },
-        saveAsFavorite: OrchestratedSideEffect<SaveAsFavorite, AppError> = OrchestratedSideEffect {
-            Either.Right(Unit)
+        saveAsFavorite: OrchestratedAction<SaveAsFavorite, MovieScreenState> = OrchestratedAction {
+            flowOf(StateUpdate { it.copy(isFavorite = true) })
         },
     ) = movieScreenReducer(
         movie,

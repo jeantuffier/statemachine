@@ -5,14 +5,12 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeParameter
-import com.jeantuffier.statemachine.orchestrate.SideEffect
-import com.jeantuffier.statemachine.orchestrate.Action
-import com.jeantuffier.statemachine.orchestrate.OrchestratedData
-import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
-import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.jeantuffier.statemachine.orchestrate.SideEffectAction
+import com.jeantuffier.statemachine.processor.generator.extension.findActions
+import com.jeantuffier.statemachine.processor.generator.extension.findTriggerDeclaration
+import com.jeantuffier.statemachine.processor.generator.extension.hasActionAnnotation
+import com.jeantuffier.statemachine.processor.generator.extension.orchestrationBaseName
+import com.jeantuffier.statemachine.processor.generator.extension.packageName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -21,7 +19,6 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
@@ -31,15 +28,10 @@ class ActionsGenerator(
     private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator,
 ) {
-
     fun generateActions(classDeclaration: KSClassDeclaration) {
-        val baseName = classDeclaration.annotations.first {
-            it.shortName.asString() == Orchestration::class.asClassName().simpleName
-        }.arguments.first().value as String
-        val packageName = classDeclaration.packageName.asString() + ".${baseName.replaceFirstChar(Char::lowercase)}"
+        val baseName = classDeclaration.orchestrationBaseName()
+        val packageName = classDeclaration.packageName(baseName)
         val fileName = "${baseName}Action"
-
-        val eventsToAdd = classDeclaration.eventsToAdd()
 
         val fileSpec = FileSpec.builder(
             packageName = packageName,
@@ -49,48 +41,32 @@ class ActionsGenerator(
                 .addModifiers(KModifier.SEALED)
 
             val className = ClassName("", fileName)
-            eventsToAdd.forEach { event ->
-                val typeSpec = addSealedElement(event, className)
+            classDeclaration.actionsToAdd().forEach { action ->
+                val typeSpec = addSealedElement(action, className)
                 sealedClass.addType(typeSpec)
             }
-            if (classDeclaration.sideEffects().isNotEmpty()) {
-                val constructorSpec = FunSpec.constructorBuilder()
-                    .addParameter("sideEffect", SideEffect::class.asClassName())
-                    .build()
-                val propertySpec = PropertySpec.builder("sideEffect", SideEffect::class.asClassName())
-                    .initializer("sideEffect")
-                    .build()
-                val typeSpec = TypeSpec.classBuilder("SideEffectHandled")
-                    .primaryConstructor(constructorSpec)
-                    .addProperty(propertySpec)
+
+            sealedClass.addType(
+                TypeSpec.objectBuilder("EventHandled")
                     .superclass(className)
-                    .build()
-                sealedClass.addType(typeSpec)
-            }
+                    .build(),
+            )
+
             addType(sealedClass.build())
         }.build()
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
     }
 
-    private fun KSClassDeclaration.eventsToAdd(): Set<KSClassDeclaration> {
-        val orchestratedEvents = getAllProperties()
-            .filter { isData(it) || isPagingContent(it) }
-            .mapNotNull { property ->
-                val type = property.annotations.first().arguments[0].value as KSType
-                type.declaration.closestClassDeclaration()
-            }
+    private fun KSClassDeclaration.actionsToAdd(): Set<KSClassDeclaration> {
+        val orchestrated = getAllProperties()
+            .filter { it.annotations.toList().isNotEmpty() }
+            .mapNotNull { it.findTriggerDeclaration() }
             .toSet()
-        val sideEffectsEvent = sideEffects()
+        val actions = findActions()
             .mapNotNull { it.declaration.closestClassDeclaration() }
             .toSet()
-        return orchestratedEvents + sideEffectsEvent
+        return orchestrated + actions
     }
-
-    private fun isData(property: KSPropertyDeclaration): Boolean =
-        property.type.resolve().toClassName() == OrchestratedData::class.asClassName()
-
-    private fun isPagingContent(property: KSPropertyDeclaration): Boolean =
-        property.type.resolve().toClassName() == OrchestratedPage::class.asClassName()
 
     private fun addSealedElement(
         classDeclaration: KSClassDeclaration,
@@ -102,13 +78,12 @@ class ActionsGenerator(
         } else {
             TypeSpec.classBuilder(classDeclaration.simpleName.asString())
                 .primaryConstructor(constructor(constructorParameters))
-                .addProperties(properties(constructorParameters, classDeclaration.isAction()))
+                .addProperties(properties(constructorParameters, classDeclaration.hasActionAnnotation()))
         }
         builder.superclass(superType)
 
         val typeVariables = classDeclaration.typeParameters.map { it.toTypeVariableName() }
-        val baseSuperInterface =
-            ClassName(classDeclaration.packageName.asString(), classDeclaration.simpleName.asString())
+        val baseSuperInterface = classDeclaration.toClassName()
         val superInterface = if (typeVariables.isNotEmpty()) {
             typeVariables.forEach { builder.addTypeVariable(it) }
             baseSuperInterface.parameterizedBy(typeVariables)
@@ -120,16 +95,12 @@ class ActionsGenerator(
         return builder.build()
     }
 
-    private fun KSClassDeclaration.isAction(): Boolean {
-        val shortName = annotations.firstOrNull()?.shortName?.asString()
-        return shortName == Action::class.java.simpleName || shortName == SideEffectAction::class.java.simpleName
-    }
-
     private fun constructor(constructorParameters: List<KSPropertyDeclaration>) =
         FunSpec.constructorBuilder().apply {
             constructorParameters.forEach { constructorParameter ->
-                val type = if (constructorParameter.type.resolve().declaration is KSTypeParameter) {
-                    ((constructorParameter.type.resolve().declaration) as KSTypeParameter).toTypeVariableName()
+                val declaration = constructorParameter.type.resolve().declaration
+                val type = if (declaration is KSTypeParameter) {
+                    declaration.toTypeVariableName()
                 } else {
                     constructorParameter.type.toTypeName()
                 }
@@ -146,10 +117,11 @@ class ActionsGenerator(
     ): List<PropertySpec> =
         constructorParameters.map { constructorParameter ->
             val name = constructorParameter.toString()
+            val declaration = constructorParameter.type.resolve().declaration
             PropertySpec.builder(
                 name = name,
-                type = if (constructorParameter.type.resolve().declaration is KSTypeParameter) {
-                    ((constructorParameter.type.resolve().declaration) as KSTypeParameter).toTypeVariableName()
+                type = if (declaration is KSTypeParameter) {
+                    declaration.toTypeVariableName()
                 } else {
                     constructorParameter.type.toTypeName()
                 },
@@ -158,6 +130,4 @@ class ActionsGenerator(
                 .initializer(name)
                 .build()
         }
-
-    private fun KSClassDeclaration.sideEffects() = annotations.first().arguments[2].value as List<KSType>
 }

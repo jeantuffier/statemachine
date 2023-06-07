@@ -9,7 +9,7 @@ import com.jeantuffier.statemachine.orchestrate.Orchestration
 @Orchestration(
     baseName = "ActorScreen",
     errorType = AppError::class,
-    sideEffects = [SaveAsFavorite::class],
+    actions = [SaveAsFavorite::class],
 )
 interface ActorScreenOrchestration {
     @Orchestrated(

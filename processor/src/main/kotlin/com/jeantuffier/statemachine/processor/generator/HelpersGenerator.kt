@@ -4,17 +4,19 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.google.devtools.ksp.symbol.KSType
-import com.google.devtools.ksp.symbol.KSValueArgument
 import com.jeantuffier.statemachine.core.StateUpdate
-import com.jeantuffier.statemachine.orchestrate.OrchestratedData
-import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
-import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
-import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
-import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
-import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.jeantuffier.statemachine.orchestrate.Page
-import com.jeantuffier.statemachine.orchestrate.SideEffect
+import com.jeantuffier.statemachine.orchestrate.LoadingStrategy
+import com.jeantuffier.statemachine.processor.generator.extension.findArgumentValueByName
+import com.jeantuffier.statemachine.processor.generator.extension.findOrchestrationAnnotation
+import com.jeantuffier.statemachine.processor.generator.extension.findTriggerType
+import com.jeantuffier.statemachine.processor.generator.extension.generateOrchestratedParameter
+import com.jeantuffier.statemachine.processor.generator.extension.isOrchestratedData
+import com.jeantuffier.statemachine.processor.generator.extension.isOrchestratedPage
+import com.jeantuffier.statemachine.processor.generator.extension.loadingStrategy
+import com.jeantuffier.statemachine.processor.generator.extension.orchestrationBaseName
+import com.jeantuffier.statemachine.processor.generator.extension.orchestrationType
+import com.jeantuffier.statemachine.processor.generator.extension.packageName
+import com.jeantuffier.statemachine.processor.generator.extension.upperCaseSimpleName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -35,14 +37,12 @@ class HelpersGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
     fun generateHelpers(classDeclaration: KSClassDeclaration) {
-        val arguments = classDeclaration.annotations.first {
-            it.shortName.asString() == Orchestration::class.asClassName().simpleName
-        }.arguments
-        val baseName = arguments[0].value as String
-        val packageName = classDeclaration.packageName.asString() + ".${baseName.replaceFirstChar(Char::lowercase)}"
-        val errorClass = arguments[1].value as KSType
+        val baseName = classDeclaration.orchestrationBaseName()
+        val packageName = classDeclaration.packageName(baseName)
+        val errorClassName = classDeclaration.findOrchestrationAnnotation()
+            ?.findArgumentValueByName("errorType")
+            ?.toClassName() ?: return
         val viewStateClassName = ClassName(packageName, "${baseName}State")
-        val errorClassName = errorClass.toClassName()
 
         val fileSpec = FileSpec.builder(
             packageName = packageName,
@@ -50,22 +50,19 @@ class HelpersGenerator(
         ).apply {
             addImport("arrow.core", "Either")
             addImport("com.jeantuffier.statemachine.core", "StateUpdate")
-            addImport("com.jeantuffier.statemachine.orchestrate", "AsyncData")
             addImport("com.jeantuffier.statemachine.orchestrate", "OrchestratedData")
             addImport("com.jeantuffier.statemachine.orchestrate", "OrchestratedPage")
-            addImport("com.jeantuffier.statemachine.orchestrate", "orchestrateSideEffect")
             addImport("kotlin.random", "Random")
-            addImport("kotlinx.coroutines.flow", "flowOf")
             addImport("kotlinx.coroutines.flow", "flow")
             addImport("kotlinx.coroutines.flow", "map")
             addImport("kotlinx.coroutines.flow", "onStart")
 
             classDeclaration.getAllProperties()
-                .filter { it.isData() || it.isPagingContent() }
+                .filter { it.isOrchestratedData() || it.isOrchestratedPage() }
                 .forEach { property ->
                     addImport(
                         classDeclaration.packageName.asString(),
-                        "sideeffects.${property.upperCaseSimpleName()}SideEffects"
+                        "events.CouldNotLoad${property.upperCaseSimpleName()}",
                     )
                     addFunction(
                         loadFunction(
@@ -77,25 +74,6 @@ class HelpersGenerator(
                         ),
                     )
                 }
-
-            val sideEffects = classDeclaration.annotations.first().arguments[2].value as List<KSType>
-            sideEffects.forEach {
-                addImport(
-                    classDeclaration.packageName.asString(),
-                    "sideeffects.${it.toClassName().simpleName}SideEffects"
-                )
-                addFunction(
-                    sideEffectFunction(
-                        it.toClassName(),
-                        viewStateClassName,
-                        errorClassName,
-                        baseName,
-                        logger,
-                    ),
-                )
-            }
-
-            addFunction(onSideEffectHandled(viewStateClassName, baseName))
         }.build()
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
     }
@@ -109,49 +87,28 @@ private fun loadFunction(
     logger: KSPLogger,
 ): FunSpec {
     val name = orchestratedProperty.simpleName.asString()
-    val input = orchestratedProperty.annotations.first().arguments.first().value as KSType
-    val arguments = orchestratedProperty.annotations.first().arguments.toList()
-    val loadingStrategy = (arguments[1].value as? KSType)?.toClassName()?.simpleName ?: "SUSPEND"
-    val orchestratorType = when (loadingStrategy) {
-        "SUSPEND" -> OrchestratedUpdate::class.asClassName()
-        "FLOW" -> OrchestratedFlowUpdate::class.asClassName()
-        else -> throw IllegalStateException()
-    }
-    val orchestrator = orchestrator(arguments, orchestratedProperty, orchestratorType, errorClass)
+    val trigger = orchestratedProperty.findTriggerType() ?: throw IllegalStateException()
+    val orchestrator = orchestratedProperty.generateOrchestratedParameter(errorClass)
     val state = StateUpdate::class.asClassName().parameterizedBy(viewStateClass)
     val returnType = Flow::class.asTypeName().parameterizedBy(state)
 
     return FunSpec.builder("load$baseName${name.replaceFirstChar(Char::uppercase)}")
         .addModifiers(KModifier.SUSPEND, KModifier.INTERNAL)
-        .addParameter(ParameterSpec.builder("input", input.toTypeName()).build())
+        .addParameter(ParameterSpec.builder("input", trigger.toTypeName()).build())
         .addParameter(ParameterSpec.builder("orchestrator", orchestrator).build())
         .returns(returnType)
         .addCode(
-            when (orchestratorType) {
-                OrchestratedUpdate::class.asClassName() -> orchestratedUpdateCodeBlock(name, orchestratedProperty)
-                OrchestratedFlowUpdate::class.asClassName() ->
-                    orchestratedFlowUpdateCodeBlock(name, state, orchestratedProperty)
+            when (orchestratedProperty.loadingStrategy()) {
+                LoadingStrategy.SUSPEND -> orchestratedUpdateCodeBlock(name, orchestratedProperty)
+                LoadingStrategy.FLOW -> {
+                    val orchestrationType = orchestratedProperty.orchestrationType()
+                    orchestratedFlowUpdateCodeBlock(name, errorClass, orchestrationType, state, orchestratedProperty)
+                }
 
                 else -> throw IllegalStateException()
-            }
+            },
         )
         .build()
-}
-
-private fun orchestrator(
-    arguments: List<KSValueArgument>,
-    orchestratedProperty: KSPropertyDeclaration,
-    orchestratorType: ClassName,
-    errorClass: ClassName,
-): ParameterizedTypeName {
-    val trigger = arguments[0].value as KSType
-    val type = orchestratedProperty.type.resolve()
-    val orchestrationType: TypeName = if (type.toClassName() == OrchestratedData::class.asClassName()) {
-        type.arguments[0].type!!.resolve().toClassName()
-    } else {
-        Page::class.asClassName().parameterizedBy(type.arguments[0].type!!.resolve().toClassName())
-    }
-    return orchestratorType.parameterizedBy(trigger.toClassName(), errorClass, orchestrationType)
 }
 
 private fun orchestratedUpdateCodeBlock(
@@ -165,39 +122,42 @@ private fun orchestratedUpdateCodeBlock(
     |       is Either.Right -> ${onDataRight("emit", orchestratedProperty)}
     |   }
     |}
-    """.trimMargin()
+""".trimMargin()
 
 private fun orchestratedFlowUpdateCodeBlock(
     name: String,
+    errorClassName: ClassName,
+    pageClassName: TypeName,
     state: ParameterizedTypeName,
     orchestratedProperty: KSPropertyDeclaration,
 ): String = """
     |return orchestrator(input)
-    |   .onStart { 
-    |       ${state} {
-    |           it.copy($name = it.$name.copy(isLoading = true)) 
-    |       }
-    |   }
-    |   .map { result ->
+    |   .map<Either<$errorClassName, $pageClassName>, $state> { result ->
     |       when (result) {
     |           is Either.Left -> ${onDataLeft("StateUpdate", name)}
     |           is Either.Right -> ${onDataRight("StateUpdate", orchestratedProperty)}
     |       }
     |   }
-    """.trimMargin()
-
-private fun onDataLeft(startFunction: String, name: String): String = """
-    |$startFunction {
-    |   it.copy(
-    |       $name = it.$name.copy(isLoading = false),
-    |       sideEffects = it.sideEffects + ${name.replaceFirstChar(Char::uppercase)}SideEffects.CouldNotBeLoaded(Random.nextLong(), result.value)
-    |   )
-    |}
+    |   .onStart { 
+    |       emit($state {
+    |           it.copy($name = it.$name.copy(isLoading = true)) 
+    |       })
+    |   }
 """.trimMargin()
+
+private fun onDataLeft(startFunction: String, name: String): String =
+    """
+        |$startFunction {
+        |   it.copy(
+        |       $name = it.$name.copy(isLoading = false),
+        |       event = CouldNotLoad${name.replaceFirstChar(Char::uppercase)}(result.value)
+        |   )
+        |}
+    """.trimMargin()
 
 private fun onDataRight(startFunction: String, property: KSPropertyDeclaration): String =
     when {
-        property.isData() -> {
+        property.isOrchestratedData() -> {
             """
             |$startFunction {
             |   it.copy(
@@ -210,10 +170,10 @@ private fun onDataRight(startFunction: String, property: KSPropertyDeclaration):
             """.trimMargin()
         }
 
-        property.isPagingContent() -> {
+        property.isOrchestratedPage() -> {
             """
             |$startFunction {
-            |   val pageNumber = result.value.offset.value / input.limit
+            |   val pageNumber = result.value.offset.value / input.limit.value
             |      it.copy(
             |      ${property.simpleName.asString()} = OrchestratedPage(
             |          available = result.value.available,
@@ -230,89 +190,24 @@ private fun onDataRight(startFunction: String, property: KSPropertyDeclaration):
         else -> throw IllegalStateException()
     }
 
-private fun sideEffectFunction(
-    trigger: ClassName,
-    viewStateClass: ClassName,
-    errorClass: ClassName,
-    baseName: String,
-    logger: KSPLogger,
-): FunSpec {
-    val name = trigger.simpleName
-    val state = StateUpdate::class.asClassName().parameterizedBy(viewStateClass)
-    val returnType = Flow::class.asTypeName().parameterizedBy(state)
-    val orchestrator = OrchestratedSideEffect::class.asClassName()
-        .parameterizedBy(trigger, errorClass)
-
-    val builder = FunSpec.builder("on$baseName$name")
-        .addModifiers(KModifier.SUSPEND, KModifier.INTERNAL)
-        .returns(returnType)
-        .addParameter(ParameterSpec.builder("input", trigger).build())
-        .addParameter(
-            ParameterSpec.builder("orchestrator", orchestrator)
-                .build(),
-        )
-
-    builder.addStatement(sideEffectCodeBlock(trigger))
-
-    return builder.build()
-}
-
-private fun sideEffectCodeBlock(trigger: ClassName): String = """
+private fun eventCodeBlock(trigger: ClassName): String = """
     |return flow {
     |    emit {
     |       it.copy(
-    |           sideEffects = it.sideEffects + ${trigger.simpleName}SideEffects.Waiting(Random.nextLong())
+    |           events = it.events + ${trigger.simpleName}Events.Waiting(Random.nextLong())
     |       )
     |    }
     |    when (orchestrator(input)) {
     |       is Either.Left -> emit {
     |           it.copy(
-    |               sideEffects = it.sideEffects + ${trigger.simpleName}SideEffects.Failed(Random.nextLong())
+    |               events = it.events + ${trigger.simpleName}Events.Failed(Random.nextLong())
     |           )
     |       }
     |       is Either.Right -> emit {
     |           it.copy(
-    |               sideEffects = it.sideEffects + ${trigger.simpleName}SideEffects.Succeeded(Random.nextLong())
+    |               events = it.events + ${trigger.simpleName}Events.Succeeded(Random.nextLong())
     |           )
     |       }
     |   }
     |}
-    """.trimMargin()
-
-private fun KSPropertyDeclaration.isData(): Boolean =
-    type.resolve().toClassName() == OrchestratedData::class.asClassName()
-
-private fun KSPropertyDeclaration.isPagingContent(): Boolean =
-    type.resolve().toClassName() == OrchestratedPage::class.asClassName()
-
-private fun updateAvailability(property: KSPropertyDeclaration): String {
-    return if (property.isPagingContent()) {
-        "available = newValue.data.available,"
-    } else {
-        ""
-    }
-}
-
-private fun onSideEffectHandled(
-    viewStateClass: ClassName,
-    baseName: String,
-): FunSpec {
-    return FunSpec.builder("on${baseName}SideEffectHandled")
-        .addParameter(
-            ParameterSpec.builder("sideEffect", SideEffect::class.asTypeName())
-                .build(),
-        )
-        .addStatement(
-            """
-                return flowOf(
-                    StateUpdate<${viewStateClass.simpleName}> { state ->
-                        state.copy(sideEffects = state.sideEffects.filterNot { it.id == sideEffect.id })
-                    }
-                )
-            """.trimIndent(),
-        )
-        .build()
-}
-
-private fun KSPropertyDeclaration.upperCaseSimpleName(): String =
-    simpleName.asString().replaceFirstChar(Char::uppercaseChar)
+""".trimMargin()

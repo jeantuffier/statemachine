@@ -7,28 +7,22 @@ import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.Orchestration
 
 @Orchestration(
-    baseName = "MovieScreen",
+    baseName = "ArticleScreen",
     errorType = AppError::class,
-    actions = [SaveAsFavorite::class],
+    actions = [CloseMovieDetails::class],
 )
-interface MovieScreenOrchestration {
-    val isFavorite: Boolean
+interface ArticleScreenOrchestration {
+    @Orchestrated(
+        trigger = LoadMovies::class,
+        loadingStrategy = LoadingStrategy.SUSPEND,
+    )
+    val movies: OrchestratedPage<Movie>
 
     @Orchestrated(
-        trigger = LoadData::class,
+        trigger = SelectMovie::class,
         loadingStrategy = LoadingStrategy.SUSPEND,
     )
     val movie: OrchestratedData<Movie>
 
-    @Orchestrated(
-        trigger = LoadData::class,
-        loadingStrategy = LoadingStrategy.SUSPEND,
-    )
-    val actors: OrchestratedPage<Actor>
-
-    @Orchestrated(
-        trigger = LoadComments::class,
-        loadingStrategy = LoadingStrategy.FLOW,
-    )
-    val comments: OrchestratedPage<Comment>
+    val someRandomValue: String
 }

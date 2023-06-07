@@ -6,25 +6,15 @@ import com.jeantuffier.statemachine.orchestrate.Offset
 import com.jeantuffier.statemachine.orchestrate.PageLoader
 
 @Action
-interface LoadData : PageLoader {
-    val id: String
+interface LoadMovies : PageLoader {
     override val offset: Offset
     override val limit: Limit
 }
 
 @Action
-interface LoadMovie {
+interface SelectMovie {
     val id: String
 }
 
 @Action
-interface LoadComments : PageLoader {
-    val id: String
-    override val offset: Offset
-    override val limit: Limit
-}
-
-@Action
-interface SaveAsFavorite {
-    val id: String
-}
+interface CloseMovieDetails
