@@ -4,21 +4,22 @@ import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.jeantuffier.statemachine.orchestrate.SideEffect
+import com.jeantuffier.statemachine.orchestrate.Event
 import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
-import com.jeantuffier.statemachine.orchestrate.Orchestration
+import com.jeantuffier.statemachine.processor.generator.extension.isNotUnit
+import com.jeantuffier.statemachine.processor.generator.extension.isOrchestratedData
+import com.jeantuffier.statemachine.processor.generator.extension.isOrchestratedPage
+import com.jeantuffier.statemachine.processor.generator.extension.orchestrationBaseName
+import com.jeantuffier.statemachine.processor.generator.extension.packageName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.asTypeName
-import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 
@@ -26,23 +27,20 @@ class StateGenerator(
     private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator,
 ) {
-
     fun generateViewState(classDeclaration: KSClassDeclaration) {
-        val arguments = classDeclaration.annotations.first {
-            it.shortName.asString() == Orchestration::class.asClassName().simpleName
-        }.arguments
-        val baseName = arguments.first().value as String
-        val packageName = classDeclaration.packageName.asString() + ".${baseName.replaceFirstChar(Char::lowercase)}"
+        val baseName = classDeclaration.orchestrationBaseName()
+        val packageName = classDeclaration.packageName(baseName)
         val fileName = "${baseName}State"
 
         val properties = classDeclaration.getAllProperties()
 
         val fileSpec = FileSpec.builder(packageName, fileName).apply {
+            val filteredProperties = properties.filter { it.isNotUnit() }
             addType(
                 TypeSpec.classBuilder(fileName)
                     .addModifiers(KModifier.DATA)
-                    .primaryConstructor(generateViewStateConstructor(properties, packageName, baseName))
-                    .addProperties(generateViewStateProperties(properties, packageName, baseName))
+                    .primaryConstructor(generateViewStateConstructor(filteredProperties))
+                    .addProperties(generateViewStateProperties(filteredProperties))
                     .build(),
             )
         }.build()
@@ -50,71 +48,53 @@ class StateGenerator(
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
     }
 
-    private fun generateViewStateConstructor(
-        properties: Sequence<KSPropertyDeclaration>,
-        packageName: String,
-        baseName: String,
-    ): FunSpec {
+    private fun generateViewStateConstructor(properties: Sequence<KSPropertyDeclaration>): FunSpec {
+        val specs = properties.map { generateOrchestratedConstructorParameter(it) }
         val parameterSpecs: MutableList<ParameterSpec> = mutableListOf()
-        val specs = properties.map { it.generateOrchestratedConstructorParameter() }
         parameterSpecs.addAll(specs)
-        parameterSpecs.add(generateSideEffectConstructorParameter(packageName, baseName))
-
+        parameterSpecs.add(generateEventConstructorParameter())
         return FunSpec.constructorBuilder()
             .addParameters(parameterSpecs)
             .build()
     }
 
-    private fun KSPropertyDeclaration.generateOrchestratedConstructorParameter(): ParameterSpec {
-        val propertyName = simpleName.asString()
-        val builder = ParameterSpec.builder(propertyName, type.toTypeName())
-        if (isData()) {
-            builder.defaultValue("%T()", OrchestratedData::class.asTypeName())
-        } else {
-            builder.defaultValue("%T()", OrchestratedPage::class.asTypeName())
+    private fun generateOrchestratedConstructorParameter(declaration: KSPropertyDeclaration): ParameterSpec {
+        val propertyName = declaration.simpleName.asString()
+        val builder = ParameterSpec.builder(propertyName, declaration.type.toTypeName())
+        val args = when {
+            declaration.isOrchestratedData() -> OrchestratedData::class.asTypeName()
+            declaration.isOrchestratedPage() -> OrchestratedPage::class.asTypeName()
+            else -> null
+        }
+        if (args != null) {
+            builder.defaultValue("%T()", args)
         }
         return builder.build()
     }
 
-    private fun generateSideEffectConstructorParameter(
-        packageName: String,
-        baseName: String,
-    ): ParameterSpec {
-        val type = SideEffect::class.asTypeName()
-        val propertyTypeName = List::class.asTypeName()
-            .parameterizedBy(type)
-        val emptyList = MemberName("kotlin.collections", "emptyList")
-        return ParameterSpec.builder("sideEffects", propertyTypeName)
-            .defaultValue("%M()", emptyList)
+    private fun generateEventConstructorParameter(): ParameterSpec {
+        val type = Event::class.asClassName().copy(nullable = true)
+        return ParameterSpec.builder("event", type)
+            .defaultValue("%L", null)
             .build()
     }
 
-    private fun generateViewStateProperties(
-        properties: Sequence<KSPropertyDeclaration>,
-        packageName: String,
-        baseName: String,
-    ): List<PropertySpec> {
-        val propertySpecs: MutableList<PropertySpec> = mutableListOf()
-        val specs = properties.mapNotNull {
+    private fun generateViewStateProperties(properties: Sequence<KSPropertyDeclaration>): List<PropertySpec> {
+        val specs = properties.map {
             val propertyName = it.simpleName.asString()
             PropertySpec.builder(propertyName, it.type.toTypeName())
                 .initializer(propertyName)
                 .build()
         }
+        val propertyTypeName = Event::class.asClassName().copy(nullable = true)
+        val propertySpecs: MutableList<PropertySpec> = mutableListOf()
         propertySpecs.addAll(specs)
-
-        val type = SideEffect::class.asTypeName()
-        val propertyTypeName = List::class.asTypeName()
-            .parameterizedBy(type)
         propertySpecs.add(
-            PropertySpec.builder("sideEffects", propertyTypeName)
-                .initializer("sideEffects")
+            PropertySpec.builder("event", propertyTypeName)
+                .initializer("event")
                 .build(),
         )
 
         return propertySpecs
     }
-
-    private fun KSPropertyDeclaration.isData(): Boolean =
-        type.resolve().toClassName() == OrchestratedData::class.asClassName()
 }

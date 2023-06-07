@@ -9,22 +9,27 @@ import com.jeantuffier.statemachine.LoadComments
 import com.jeantuffier.statemachine.LoadData
 import com.jeantuffier.statemachine.Movie
 import com.jeantuffier.statemachine.SaveAsFavorite
+import com.jeantuffier.statemachine.core.StateUpdate
+import com.jeantuffier.statemachine.events.CouldNotLoadActors
+import com.jeantuffier.statemachine.events.CouldNotLoadComments
+import com.jeantuffier.statemachine.events.CouldNotLoadMovie
 import com.jeantuffier.statemachine.orchestrate.Available
+import com.jeantuffier.statemachine.orchestrate.Limit
+import com.jeantuffier.statemachine.orchestrate.Offset
+import com.jeantuffier.statemachine.orchestrate.OrchestratedAction
+import com.jeantuffier.statemachine.orchestrate.OrchestratedData
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
-import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
+import com.jeantuffier.statemachine.orchestrate.OrchestratedPage
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
-import com.jeantuffier.statemachine.sideeffects.ActorsSideEffects
-import com.jeantuffier.statemachine.sideeffects.CommentsSideEffects
-import com.jeantuffier.statemachine.sideeffects.MovieSideEffects
-import com.jeantuffier.statemachine.sideeffects.SaveAsFavoriteSideEffects
+import com.jeantuffier.statemachine.orchestrate.Page
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertNotNull
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -33,7 +38,12 @@ class MovieScreenTest {
     @Test
     fun shouldBeInitialState() = runTest {
         defaultStateMachine(coroutineDispatcher = StandardTestDispatcher(testScheduler)).state.test {
-            assertEquals(MovieScreenState(), awaitItem())
+            val item = awaitItem()
+            assertFalse(item.isFavorite)
+            assertEquals(OrchestratedData(), item.movie)
+            assertEquals(OrchestratedPage(), item.actors)
+            assertEquals(OrchestratedPage(), item.comments)
+
             expectNoEvents()
         }
     }
@@ -42,32 +52,36 @@ class MovieScreenTest {
     fun shouldLoadData() = runTest {
         val defaultStateMachine = defaultStateMachine(coroutineDispatcher = StandardTestDispatcher(testScheduler))
         defaultStateMachine.state.test {
-            assertEquals(MovieScreenState(), awaitItem())
+            var item = awaitItem()
+            assertFalse(item.isFavorite)
+            assertEquals(OrchestratedData(), item.movie)
+            assertEquals(OrchestratedPage(), item.actors)
+            assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", 0, 10))
+            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", Offset(0), Limit(10)))
 
-            var next = awaitItem()
-            assertTrue(next.movie.isLoading)
-            assertNull(next.movie.value)
-            assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.pages.isEmpty())
+            item = awaitItem()
+            assertTrue(item.movie.isLoading)
+            assertNull(item.movie.value)
+            assertFalse(item.actors.isLoading)
+            assertTrue(item.actors.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.movie.isLoading)
-            assertEquals(Movie("1", "Movie1"), next.movie.value)
-            assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.pages.isEmpty())
+            item = awaitItem()
+            assertFalse(item.movie.isLoading)
+            assertEquals(Movie("1", "Movie1"), item.movie.value)
+            assertFalse(item.actors.isLoading)
+            assertTrue(item.actors.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.movie.isLoading)
-            assertEquals(Movie("1", "Movie1"), next.movie.value)
-            assertTrue(next.actors.isLoading)
-            assertTrue(next.actors.pages.isEmpty())
+            item = awaitItem()
+            assertFalse(item.movie.isLoading)
+            assertEquals(Movie("1", "Movie1"), item.movie.value)
+            assertTrue(item.actors.isLoading)
+            assertTrue(item.actors.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.movie.isLoading)
-            assertEquals(Movie("1", "Movie1"), next.movie.value)
-            assertFalse(next.actors.isLoading)
+            item = awaitItem()
+            assertFalse(item.movie.isLoading)
+            assertEquals(Movie("1", "Movie1"), item.movie.value)
+            assertFalse(item.actors.isLoading)
             assertEquals(
                 mapOf(
                     0 to listOf(
@@ -76,9 +90,11 @@ class MovieScreenTest {
                         Actor("actor3", "actor3"),
                     ),
                 ),
-                next.actors.pages,
+                item.actors.pages,
             )
-            assertTrue(next.actors.hasLoadedEverything())
+            assertTrue(item.actors.hasLoadedEverything())
+
+            expectNoEvents()
         }
     }
 
@@ -89,30 +105,28 @@ class MovieScreenTest {
             coroutineDispatcher = StandardTestDispatcher(testScheduler),
         )
         defaultStateMachine.state.test {
-            assertEquals(MovieScreenState(), awaitItem())
+            var item = awaitItem()
+            assertFalse(item.isFavorite)
+            assertEquals(OrchestratedData(), item.movie)
+            assertEquals(OrchestratedPage(), item.actors)
+            assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", 0, 10))
+            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", Offset(0), Limit(10)))
 
-            var next = awaitItem()
-            assertTrue(next.movie.isLoading)
-            assertNull(next.movie.value)
+            item = awaitItem()
+            assertTrue(item.movie.isLoading)
+            assertNull(item.movie.value)
 
-            next = awaitItem()
-            assertFalse(next.movie.isLoading)
-            assertEquals(1, next.sideEffects.size)
-            assertEquals(null, next.movie.value)
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
+            item = awaitItem()
+            assertFalse(item.movie.isLoading)
 
-            next = awaitItem()
-            assertFalse(next.movie.isLoading)
-            assertTrue(next.actors.isLoading)
-            assertTrue(next.actors.pages.isEmpty())
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
+            item = awaitItem()
+            assertFalse(item.movie.isLoading)
+            assertTrue(item.actors.isLoading)
+            assertTrue(item.actors.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.actors.isLoading)
+            item = awaitItem()
+            assertFalse(item.actors.isLoading)
             assertEquals(
                 mapOf(
                     0 to listOf(
@@ -121,9 +135,14 @@ class MovieScreenTest {
                         Actor("actor3", "actor3"),
                     ),
                 ),
-                next.actors.pages,
+                item.actors.pages,
             )
-            assertTrue(next.actors.hasLoadedEverything())
+            assertTrue(item.actors.hasLoadedEverything())
+
+            assertNotNull(item.event)
+            assertTrue(item.event is CouldNotLoadMovie)
+
+            expectNoEvents()
         }
     }
 
@@ -134,36 +153,43 @@ class MovieScreenTest {
             coroutineDispatcher = StandardTestDispatcher(testScheduler),
         )
         defaultStateMachine.state.test {
-            assertEquals(MovieScreenState(), awaitItem())
+            var item = awaitItem()
+            assertFalse(item.isFavorite)
+            assertEquals(OrchestratedData(), item.movie)
+            assertEquals(OrchestratedPage(), item.actors)
+            assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", offset = 0, limit = 10))
+            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", Offset(0), Limit(10)))
 
-            var next = awaitItem()
-            assertTrue(next.movie.isLoading)
-            assertNull(next.movie.value)
-            assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.pages.isEmpty())
+            item = awaitItem()
+            assertTrue(item.movie.isLoading)
+            assertNull(item.movie.value)
+            assertFalse(item.actors.isLoading)
+            assertTrue(item.actors.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.movie.isLoading)
-            assertEquals(Movie("1", "Movie1"), next.movie.value)
-            assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.pages.isEmpty())
+            item = awaitItem()
+            assertFalse(item.movie.isLoading)
+            assertEquals(Movie("1", "Movie1"), item.movie.value)
+            assertFalse(item.actors.isLoading)
+            assertTrue(item.actors.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.movie.isLoading)
-            assertEquals(Movie("1", "Movie1"), next.movie.value)
-            assertTrue(next.actors.isLoading)
-            assertTrue(next.actors.pages.isEmpty())
+            item = awaitItem()
+            assertFalse(item.movie.isLoading)
+            assertEquals(Movie("1", "Movie1"), item.movie.value)
+            assertTrue(item.actors.isLoading)
+            assertTrue(item.actors.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.movie.isLoading)
-            assertEquals(Movie("1", "Movie1"), next.movie.value)
-            assertFalse(next.actors.isLoading)
-            assertTrue(next.actors.pages.isEmpty())
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is ActorsSideEffects.CouldNotBeLoaded)
-            assertFalse(next.actors.hasLoadedEverything())
+            item = awaitItem()
+            assertFalse(item.movie.isLoading)
+            assertEquals(Movie("1", "Movie1"), item.movie.value)
+            assertFalse(item.actors.isLoading)
+            assertTrue(item.actors.pages.isEmpty())
+            assertFalse(item.actors.hasLoadedEverything())
+
+            assertNotNull(item.event)
+            assertTrue(item.event is CouldNotLoadActors)
+
+            expectNoEvents()
         }
     }
 
@@ -171,16 +197,20 @@ class MovieScreenTest {
     fun shouldLoadComments() = runTest {
         val defaultStateMachine = defaultStateMachine(coroutineDispatcher = StandardTestDispatcher(testScheduler))
         defaultStateMachine.state.test {
-            assertEquals(MovieScreenState(), awaitItem())
+            var item = awaitItem()
+            assertFalse(item.isFavorite)
+            assertEquals(OrchestratedData(), item.movie)
+            assertEquals(OrchestratedPage(), item.actors)
+            assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadComments("1", 0, 10))
+            defaultStateMachine.reduce(MovieScreenAction.LoadComments("1", Offset(0), Limit(10)))
 
-            var next = awaitItem()
-            assertTrue(next.comments.isLoading)
-            assertTrue(next.comments.pages.isEmpty())
+            item = awaitItem()
+            assertTrue(item.comments.isLoading)
+            assertTrue(item.comments.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.actors.isLoading)
+            item = awaitItem()
+            assertFalse(item.actors.isLoading)
             assertEquals(
                 mapOf(
                     0 to listOf(
@@ -189,9 +219,11 @@ class MovieScreenTest {
                         Comment("comment3", "content3"),
                     ),
                 ),
-                next.comments.pages,
+                item.comments.pages,
             )
-            assertTrue(next.comments.hasLoadedEverything())
+            assertTrue(item.comments.hasLoadedEverything())
+
+            expectNoEvents()
         }
     }
 
@@ -202,20 +234,26 @@ class MovieScreenTest {
             coroutineDispatcher = StandardTestDispatcher(testScheduler),
         )
         defaultStateMachine.state.test {
-            assertEquals(MovieScreenState(), awaitItem())
+            var item = awaitItem()
+            assertFalse(item.isFavorite)
+            assertEquals(OrchestratedData(), item.movie)
+            assertEquals(OrchestratedPage(), item.actors)
+            assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadComments("1", 0, 0))
+            defaultStateMachine.reduce(MovieScreenAction.LoadComments("1", Offset(0), Limit(10)))
 
-            var next = awaitItem()
-            assertTrue(next.comments.isLoading)
-            assertTrue(next.comments.pages.isEmpty())
+            item = awaitItem()
+            assertTrue(item.comments.isLoading)
+            assertTrue(item.comments.pages.isEmpty())
 
-            next = awaitItem()
-            assertFalse(next.comments.isLoading)
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.actors.pages.isEmpty())
-            assertTrue(next.sideEffects.first() is CommentsSideEffects.CouldNotBeLoaded)
-            assertFalse(next.comments.hasLoadedEverything())
+            item = awaitItem()
+            assertFalse(item.comments.isLoading)
+            assertFalse(item.comments.hasLoadedEverything())
+
+            assertNotNull(item.event)
+            assertTrue(item.event is CouldNotLoadComments)
+
+            expectNoEvents()
         }
     }
 
@@ -223,60 +261,21 @@ class MovieScreenTest {
     fun saveAsFavoriteShouldSucceed() = runTest {
         val defaultStateMachine = defaultStateMachine(coroutineDispatcher = StandardTestDispatcher(testScheduler))
         defaultStateMachine.state.test {
-            assertEquals(MovieScreenState(), awaitItem())
+            var item = awaitItem()
+            assertFalse(item.isFavorite)
+            assertEquals(OrchestratedData(), item.movie)
+            assertEquals(OrchestratedPage(), item.actors)
+            assertEquals(OrchestratedPage(), item.comments)
 
             defaultStateMachine.reduce(MovieScreenAction.SaveAsFavorite("1"))
 
-            var next = awaitItem()
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
+            item = awaitItem()
+            assertTrue(item.isFavorite)
+            assertEquals(OrchestratedData(), item.movie)
+            assertEquals(OrchestratedPage(), item.actors)
+            assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.SideEffectHandled(next.sideEffects.first()))
-            next = awaitItem()
-            assertEquals(MovieScreenState(), next)
-
-            next = awaitItem()
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Succeeded)
-        }
-    }
-
-    @Test
-    fun saveAsFavoriteShouldFail() = runTest {
-        val defaultStateMachine = defaultStateMachine(
-            saveAsFavorite = { Either.Left(AppError.SomeRandomError) },
-            coroutineDispatcher = StandardTestDispatcher(testScheduler),
-        )
-        defaultStateMachine.state.test {
-            assertEquals(MovieScreenState(), awaitItem())
-
-            defaultStateMachine.reduce(MovieScreenAction.SaveAsFavorite("1"))
-
-            var next = awaitItem()
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
-
-            next = awaitItem()
-            assertEquals(2, next.sideEffects.size)
-            assertTrue(next.sideEffects[1] is SaveAsFavoriteSideEffects.Failed)
-        }
-    }
-
-    @Test
-    fun handleSideEffectShouldSucceed() = runTest {
-        val defaultStateMachine = defaultStateMachine(coroutineDispatcher = StandardTestDispatcher(testScheduler))
-        defaultStateMachine.state.test {
-            assertEquals(MovieScreenState(), awaitItem())
-
-            defaultStateMachine.reduce(MovieScreenAction.SaveAsFavorite("1"))
-
-            var next = awaitItem()
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
-
-            next = awaitItem()
-            assertEquals(2, next.sideEffects.size)
-            assertTrue(next.sideEffects[1] is SaveAsFavoriteSideEffects.Succeeded)
+            expectNoEvents()
         }
     }
 
@@ -315,9 +314,8 @@ class MovieScreenTest {
                 ),
             )
         },
-        saveAsFavorite: OrchestratedSideEffect<SaveAsFavorite, AppError> = OrchestratedSideEffect {
-            delay(100)
-            Either.Right(Unit)
+        saveAsFavorite: OrchestratedAction<SaveAsFavorite, MovieScreenState> = OrchestratedAction {
+            flowOf(StateUpdate { it.copy(isFavorite = true) })
         },
         coroutineDispatcher: CoroutineDispatcher,
     ) = movieScreenStateMachine(
@@ -325,6 +323,7 @@ class MovieScreenTest {
         actors,
         comments,
         saveAsFavorite,
+        MovieScreenState(isFavorite = false),
         coroutineDispatcher,
     )
 }

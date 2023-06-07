@@ -9,17 +9,14 @@ import com.jeantuffier.statemachine.Comment
 import com.jeantuffier.statemachine.LoadComments
 import com.jeantuffier.statemachine.LoadData
 import com.jeantuffier.statemachine.Movie
-import com.jeantuffier.statemachine.SaveAsFavorite
 import com.jeantuffier.statemachine.orchestrate.Available
 import com.jeantuffier.statemachine.orchestrate.Limit
 import com.jeantuffier.statemachine.orchestrate.Offset
 import com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate
-import com.jeantuffier.statemachine.orchestrate.OrchestratedSideEffect
 import com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate
-import com.jeantuffier.statemachine.sideeffects.CommentsSideEffects
-import com.jeantuffier.statemachine.sideeffects.MovieSideEffects
-import com.jeantuffier.statemachine.sideeffects.SaveAsFavoriteSideEffects
-import kotlinx.coroutines.flow.first
+import com.jeantuffier.statemachine.orchestrate.Page
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlin.test.Test
@@ -34,10 +31,10 @@ class MovieScreenHelpersTest {
     fun loadMovieShouldSucceed() = runTest {
         val input = object : LoadData {
             override val id: String = "1"
-            override val offset: Int = 0
-            override val limit: Int = 10
+            override val offset: Offset = Offset(0)
+            override val limit: Limit = Limit(10)
         }
-        var next = MovieScreenState()
+        var next = MovieScreenState(isFavorite = false)
         val movie = Movie("movie1", "movie1")
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
             Either.Right(movie)
@@ -59,10 +56,10 @@ class MovieScreenHelpersTest {
     fun loadMovieShouldFail() = runTest {
         val input = object : LoadData {
             override val id: String = "1"
-            override val offset: Int = 0
-            override val limit: Int = 10
+            override val offset: Offset = Offset(0)
+            override val limit: Limit = Limit(10)
         }
-        var next = MovieScreenState()
+        var next = MovieScreenState(isFavorite = false)
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
             Either.Left(AppError.SomeRandomError)
         }
@@ -74,8 +71,6 @@ class MovieScreenHelpersTest {
             next = awaitItem()(next)
             assertFalse(next.movie.isLoading)
             assertNull(next.movie.value)
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
 
             awaitComplete()
         }
@@ -85,10 +80,10 @@ class MovieScreenHelpersTest {
     fun loadActorsShouldSucceed() = runTest {
         val input = object : LoadData {
             override val id: String = "1"
-            override val offset: Int = 0
-            override val limit: Int = 10
+            override val offset: Offset = Offset(0)
+            override val limit: Limit = Limit(10)
         }
-        var next = MovieScreenState()
+        var next = MovieScreenState(isFavorite = false)
         val actors = Page(
             available = Available(3),
             offset = Offset(0),
@@ -130,10 +125,10 @@ class MovieScreenHelpersTest {
     fun loadActorsShouldFail() = runTest {
         val input = object : LoadData {
             override val id: String = "1"
-            override val offset: Int = 0
-            override val limit: Int = 10
+            override val offset: Offset = Offset(0)
+            override val limit: Limit = Limit(10)
         }
-        var next = MovieScreenState()
+        var next = MovieScreenState(isFavorite = false)
         val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
             Either.Left(AppError.SomeRandomError)
         }
@@ -145,8 +140,6 @@ class MovieScreenHelpersTest {
             next = awaitItem()(next)
             assertFalse(next.movie.isLoading)
             assertNull(next.movie.value)
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is MovieSideEffects.CouldNotBeLoaded)
 
             awaitComplete()
         }
@@ -156,10 +149,10 @@ class MovieScreenHelpersTest {
     fun loadCommentsShouldSucceed() = runTest {
         val input = object : LoadComments {
             override val id: String = "1"
-            override val offset = 0
-            override val limit = 3
+            override val offset: Offset = Offset(0)
+            override val limit: Limit = Limit(3)
         }
-        var next = MovieScreenState()
+
         val page1 = Page(
             Available(6),
             Offset(0),
@@ -181,8 +174,15 @@ class MovieScreenHelpersTest {
             ),
         )
         val orchestrator = OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> {
-            flowOf(page1.right(), page2.right())
+            flow {
+                delay(100)
+                emit(page1.right())
+                delay(100)
+                emit(page2.right())
+            }
         }
+
+        var next = MovieScreenState(isFavorite = false)
         loadMovieScreenComments(input, orchestrator).test {
             next = awaitItem()(next)
             assertTrue(next.comments.isLoading)
@@ -208,10 +208,10 @@ class MovieScreenHelpersTest {
     fun loadCommentsShouldFail() = runTest {
         val input = object : LoadComments {
             override val id: String = "1"
-            override val offset = 0
-            override val limit = 3
+            override val offset: Offset = Offset(0)
+            override val limit: Limit = Limit(3)
         }
-        var next = MovieScreenState()
+        var next = MovieScreenState(isFavorite = false)
         val orchestrator = OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> {
             flowOf(Either.Left(AppError.SomeRandomError))
         }
@@ -224,68 +224,7 @@ class MovieScreenHelpersTest {
             assertFalse(next.movie.isLoading)
             assertEquals(emptyMap(), next.comments.pages)
             assertFalse(next.comments.hasLoadedEverything())
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is CommentsSideEffects.CouldNotBeLoaded)
 
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun onSaveAsFavoriteShouldSucceed() = runTest {
-        val input = object : SaveAsFavorite {
-            override val id: String = "1"
-        }
-        var next = MovieScreenState()
-        val orchestrator = OrchestratedSideEffect<SaveAsFavorite, AppError> {
-            Either.Right(Unit)
-        }
-        onMovieScreenSaveAsFavorite(input, orchestrator).test {
-            next = awaitItem()(next)
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
-
-            next = onMovieScreenSideEffectHandled(next.sideEffects.first()).first()(next)
-
-            next = awaitItem()(next)
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Succeeded)
-
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun onSaveAsFavoriteShouldFail() = runTest {
-        val input = object : SaveAsFavorite {
-            override val id: String = "1"
-        }
-        var next = MovieScreenState()
-        val orchestrator = OrchestratedSideEffect<SaveAsFavorite, AppError> {
-            Either.Left(AppError.SomeRandomError)
-        }
-        onMovieScreenSaveAsFavorite(input, orchestrator).test {
-            next = awaitItem()(next)
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Waiting)
-
-            next = onMovieScreenSideEffectHandled(next.sideEffects.first()).first()(next)
-
-            next = awaitItem()(next)
-            assertEquals(1, next.sideEffects.size)
-            assertTrue(next.sideEffects.first() is SaveAsFavoriteSideEffects.Failed)
-
-            awaitComplete()
-        }
-    }
-
-    @Test
-    fun handleSideEffectShouldSucceed() = runTest {
-        val sideEffect = SaveAsFavoriteSideEffects.Waiting(1)
-        var next = MovieScreenState(sideEffects = listOf(sideEffect))
-        onMovieScreenSideEffectHandled(sideEffect).test {
-            next = awaitItem()(next)
-            assertTrue(next.sideEffects.isEmpty())
             awaitComplete()
         }
     }

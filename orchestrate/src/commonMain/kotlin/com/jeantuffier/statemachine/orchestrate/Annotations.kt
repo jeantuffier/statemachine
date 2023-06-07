@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
 annotation class Orchestration(
     val baseName: String,
     val errorType: KClass<*>,
-    val sideEffects: Array<KClass<*>>,
+    val actions: Array<KClass<*>>,
 )
 
 enum class LoadingStrategy { SUSPEND, FLOW }
@@ -22,7 +22,3 @@ annotation class Orchestrated(
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
 annotation class Action
-
-@Target(AnnotationTarget.CLASS)
-@Retention(AnnotationRetention.SOURCE)
-annotation class SideEffectAction
