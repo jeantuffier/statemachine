@@ -9,7 +9,7 @@ plugins {
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.2.0-dev11"
+version = "0.2.0-dev12"
 
 repositories {
     google()
@@ -39,6 +39,7 @@ kotlin {
             }
         }
     }
+    iosSimulatorArm64()
 
     js(IR) {
         browser {
