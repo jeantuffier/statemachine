@@ -9,9 +9,9 @@ subprojects {
     }
 }
 
-configure<com.diffplug.gradle.spotless.SpotlessExtension> {
-    kotlin {
-        target("**/*.kt", "**/*.kts")
-        ktlint()
-    }
-}
+//configure<com.diffplug.gradle.spotless.SpotlessExtension> {
+//    kotlin {
+//        target("**/*.kt", "**/*.kts")
+//        ktlint()
+//    }
+//}

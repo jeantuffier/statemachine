@@ -4,8 +4,8 @@ val turbineVersion: String by project
 
 plugins {
     kotlin("multiplatform")
-    id("maven-publish")
     id("com.rickclephas.kmp.nativecoroutines")
+    id("convention.publication")
 }
 
 group = "com.jeantuffier.statemachine"
@@ -14,19 +14,6 @@ version = "0.2.0-dev12"
 repositories {
     google()
     mavenCentral()
-}
-
-publishing {
-    repositories {
-        maven {
-            url = uri("https://maven.pkg.github.com/jeantuffier/statemachine")
-            name = "github"
-            credentials {
-                username = System.getenv("GITHUB_USERNAME")
-                password = System.getenv("GITHUB_PASSWORD")
-            }
-        }
-    }
 }
 
 kotlin {

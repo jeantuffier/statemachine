@@ -29,3 +29,5 @@ include(":orchestrate")
 include(":example")
 include(":core")
 include(":processor")
+includeBuild("convention-plugins")
+
