@@ -1,6 +1,6 @@
 package com.jeantuffier.statemachine.core
 
-import com.rickclephas.kmp.nativecoroutines.NativeCoroutineScope
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -28,6 +28,7 @@ interface StateMachine<Input, Output> {
     /**
      * Clients should collect from this state flow to receive new updates of the state.
      */
+    @NativeCoroutinesState
     val state: StateFlow<Output>
 
     /**
@@ -42,7 +43,7 @@ interface StateMachine<Input, Output> {
      */
     fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>)
 
-    suspend fun close()
+    fun close()
 }
 
 fun <Input : Any, Output> StateMachine(
@@ -52,11 +53,11 @@ fun <Input : Any, Output> StateMachine(
 ) = object : StateMachine<Input, Output> {
 
     private val job = SupervisorJob()
-
-    @NativeCoroutineScope
     private val coroutineScope = CoroutineScope(job + coroutineDispatcher)
 
     private val _state = MutableStateFlow(initialValue)
+
+    @NativeCoroutinesState
     override val state = _state.asStateFlow()
 
     private val jobRegistry: MutableMap<Int, Job> = mutableMapOf()
@@ -80,10 +81,12 @@ fun <Input : Any, Output> StateMachine(
         }
     }
 
-    override suspend fun close() {
-        job.cancelChildren()
-        job.cancel()
-        job.join()
+    override fun close() {
+        coroutineScope.launch {
+            job.cancelChildren()
+            job.cancel()
+            job.join()
+        }
     }
 }
 

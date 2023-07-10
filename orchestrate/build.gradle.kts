@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.jeantuffier.statemachine"
-version = "0.2.0-dev12"
+version = "0.2.0-dev13"
 
 repositories {
     google()
@@ -30,13 +30,7 @@ kotlin {
     iosSimulatorArm64()
 
     js(IR) {
-        browser {
-            commonWebpackConfig {
-                cssSupport {
-                    enabled.set(true)
-                }
-            }
-        }
+        browser()
     }
 
     sourceSets {
@@ -79,4 +73,11 @@ kotlin {
             }
         }
     }
+}
+
+// Fix Gradle warning about signing tasks using publishing task outputs without explicit dependencies
+// https://youtrack.jetbrains.com/issue/KT-46466
+tasks.withType<AbstractPublishToMaven>().configureEach {
+    val signingTasks = tasks.withType<Sign>()
+    mustRunAfter(signingTasks)
 }

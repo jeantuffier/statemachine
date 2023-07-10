@@ -8,7 +8,7 @@ plugins {
 }
 
 group = "com.jeantuffier"
-version = "0.2.0-dev12"
+version = "0.2.0-dev13"
 
 repositories {
     google()
@@ -28,13 +28,7 @@ kotlin {
     iosSimulatorArm64()
 
     js(IR) {
-        browser {
-            commonWebpackConfig {
-                cssSupport {
-                    enabled.set(true)
-                }
-            }
-        }
+        browser()
     }
 
     sourceSets {
@@ -91,5 +85,21 @@ tasks.named("build") {
 }
 
 tasks.named("compileKotlinJvm") {
+    dependsOn(tasks.named("kspCommonMainKotlinMetadata"))
+}
+
+tasks.named("compileKotlinIosSimulatorArm64") {
+    dependsOn(tasks.named("kspCommonMainKotlinMetadata"))
+}
+
+tasks.named("compileKotlinIosArm64") {
+    dependsOn(tasks.named("kspCommonMainKotlinMetadata"))
+}
+
+tasks.named("compileKotlinIosX64") {
+    dependsOn(tasks.named("kspCommonMainKotlinMetadata"))
+}
+
+tasks.named("compileKotlinJs") {
     dependsOn(tasks.named("kspCommonMainKotlinMetadata"))
 }
