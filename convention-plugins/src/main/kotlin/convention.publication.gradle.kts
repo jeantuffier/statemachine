@@ -46,14 +46,7 @@ publishing {
         maven {
             name = "sonatype"
             setUrl("https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/")
-            url = uri(
-                "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-                /*if (isReleaseBuild) {
-                    "https://s01.oss.sonatype.org/service/local/staging/deploy/maven2/"
-                } else {
-                    "https://s01.oss.sonatype.org/content/repositories/snapshots/"
-                }*/
-            )
+            // "https://s01.oss.sonatype.org/content/repositories/snapshots/"
             credentials {
                 username = getExtraString("ossrhUsername")
                 password = getExtraString("ossrhPassword")
