@@ -12,12 +12,12 @@ import com.jeantuffier.statemachine.processor.generator.StateMachineGenerator
 
 class OrchestrationVisitor(environment: SymbolProcessorEnvironment) : KSVisitorVoid() {
 
-    private val viewStateGenerator = StateGenerator(environment.logger, environment.codeGenerator)
-    private val viewActionsGenerator = ActionsGenerator(environment.logger, environment.codeGenerator)
-    private val helpersGenerator = HelpersGenerator(environment.logger, environment.codeGenerator)
-    private val reducerGenerator = ReducerGenerator(environment.logger, environment.codeGenerator)
-    private val eventGenerator = EventGenerator(environment.logger, environment.codeGenerator)
-    private val stateMachineGenerator = StateMachineGenerator(environment.logger, environment.codeGenerator)
+    private val viewStateGenerator = StateGenerator(environment.codeGenerator)
+    private val viewActionsGenerator = ActionsGenerator(environment.codeGenerator)
+    private val helpersGenerator = HelpersGenerator(environment.codeGenerator)
+    private val reducerGenerator = ReducerGenerator(environment.codeGenerator)
+    private val eventGenerator = EventGenerator(environment.codeGenerator)
+    private val stateMachineGenerator = StateMachineGenerator(environment.codeGenerator)
 
     override fun visitClassDeclaration(
         classDeclaration: KSClassDeclaration,

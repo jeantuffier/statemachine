@@ -19,6 +19,10 @@ class OrchestrationProcessor(
         return unresolvedSymbols
     }
 
+    /**
+     * Checks the validity of each element annotated with [com.jeantuffier.statemachine.orchestrate.Orchestration] and
+     * starts generating code.
+     */
     private fun generateOrchestration(resolver: Resolver): List<KSAnnotated> {
         var unresolvedSymbols: List<KSAnnotated> = emptyList()
         val annotationName = Orchestration::class.qualifiedName
