@@ -1,7 +1,6 @@
 package com.jeantuffier.statemachine.processor.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
-import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.jeantuffier.statemachine.orchestrate.Event
 import com.jeantuffier.statemachine.processor.generator.extension.isOrchestratedData
@@ -14,8 +13,11 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.ksp.writeTo
 
+/**
+ * Generate the events representing the failure of functions loading data in properties annotated with
+ * [com.jeantuffier.statemachine.orchestrate.Orchestrated].
+ */
 class EventGenerator(
-    private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator,
 ) {
 

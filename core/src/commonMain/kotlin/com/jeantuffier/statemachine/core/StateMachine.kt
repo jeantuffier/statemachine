@@ -1,5 +1,6 @@
 package com.jeantuffier.statemachine.core
 
+import com.rickclephas.kmp.nativecoroutines.NativeCoroutines
 import com.rickclephas.kmp.nativecoroutines.NativeCoroutinesState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -15,37 +16,61 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
- * A [StateMachine] should be used to extract duplicated business logic into a common package.
+ * Abstracts and centralizes the common business logic of your software.
  *
- * It is designed to work with a unidirectional pattern (UDF). The client should use input
- * objects to trigger the execution of specific logic and collect outputs from the state flow.
+ * Trigger a specific action by using the [StateMachine.reduce] function and passing it the desired input.
+ * Once the logic has been executed, the state will be updated accordingly.
  *
- * The state machine exposes a [StateFlow] to retain its current state and be able to
- * emit new states to the client after reducing an input.
+ * While direct implementation is possible, it is recommended to use the function [StateMachine] to obtain a
+ * working instance out of the box.
+ *
  */
 interface StateMachine<Input, Output> {
 
     /**
-     * Clients should collect from this state flow to receive new updates of the state.
+     * The state of the state machine. Clients should collect from this flow to receive new updates.
      */
     @NativeCoroutinesState
     val state: StateFlow<Output>
 
     /**
-     * Clients should call this function whenever an [Input] is triggered by a user.
-     * @param input: The input triggered by the user.
+     * Triggers the execution of an input.
+     * @param input The input that needs to be executed by the state machine.
      */
     fun <T : Input> reduce(input: T)
 
     /**
-     * Clients should call this function whenever an [Input] triggered by [reduce] needs to be cancelled.
-     * @param input: The input used to trigger a job to should be cancelled.
+     * Cancels the execution of a specific action.
+     * @param input The input to cancel.
+     * @param rollback A [StateUpdate] to restore the state machine's state after cancellation.
      */
     fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>)
 
+    /**
+     * Cancels the state machine job and its children.
+     */
     fun close()
 }
 
+/**
+ * Creates an instance of [StateMachine].
+ *
+ * @param initialValue The initial value of the state machine's state.
+ * @param coroutineDispatcher The coroutine dispatcher to use when executing logic triggered by [StateMachine.reduce].
+ * @param reducer The reducer to use in this state machine.
+ *
+ * Each execution triggered by the [StateMachine.reduce] function is launched inside a dedicated coroutine. That gives
+ * the state machine the possibility to parallelize executions.
+ *
+ * Whenever [StateMachine.reduce] is called, an entry is added to "jobRegistry". This give us the possibility to cancel
+ * the execution based on the input hashcode later on. If an input is passed again to the reduce function before the
+ * previous execution completed, it will cancel it and rerun the execution.
+ *
+ * When cancelling an input with [StateMachine.cancel], a [StateUpdate] is required to restore the state machine's
+ * state. For example, in the situation where an input's execution has already updated the state before the cancel
+ * function is called. The state will be stale if not restored properly, the rollback parameter is there to ensure the
+ * state validity after cancellation.
+ */
 fun <Input : Any, Output> StateMachine(
     initialValue: Output,
     coroutineDispatcher: CoroutineDispatcher,
@@ -56,8 +81,6 @@ fun <Input : Any, Output> StateMachine(
     private val coroutineScope = CoroutineScope(job + coroutineDispatcher)
 
     private val _state = MutableStateFlow(initialValue)
-
-    @NativeCoroutinesState
     override val state = _state.asStateFlow()
 
     private val jobRegistry: MutableMap<Int, Job> = mutableMapOf()
@@ -90,10 +113,28 @@ fun <Input : Any, Output> StateMachine(
     }
 }
 
+/**
+ * The type returned by [Reducer] to represent how a state machine state should be updated.
+ */
 fun interface StateUpdate<T> {
+
+    /**
+     * @param state: the current state hold by the state machine.
+     * @return an updated state value.
+     */
     suspend operator fun invoke(state: T): T
 }
 
+/**
+ * The function matching state machine's input and the logic to execute.
+ */
 fun interface Reducer<Input, Output> {
+
+    /**
+     * An input can potentially result in several state updates, for example when loading data. We usually want
+     * to show a spinner or something equivalent to let the user know something is loading and then show the data when
+     * it is available. For that reason, a [Reducer] returns a flow of [StateUpdate].
+     */
+    @NativeCoroutines
     suspend operator fun invoke(input: Input): Flow<StateUpdate<Output>>
 }

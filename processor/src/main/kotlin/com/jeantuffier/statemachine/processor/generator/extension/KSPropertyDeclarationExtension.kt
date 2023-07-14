@@ -17,6 +17,10 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 
+/**
+ * Returns [com.jeantuffier.statemachine.orchestrate.OrchestratedData] or
+ * [com.jeantuffier.statemachine.orchestrate.OrchestratedPage] if the property uses one of those types, Unit otherwise.
+ */
 fun KSPropertyDeclaration.orchestrationType(): TypeName {
     val type = type.resolve()
     return when {
@@ -26,25 +30,54 @@ fun KSPropertyDeclaration.orchestrationType(): TypeName {
     }
 }
 
+/**
+ * Checks if a declaration is of type [com.jeantuffier.statemachine.orchestrate.OrchestratedData].
+ */
 fun KSPropertyDeclaration.isOrchestratedData() = type.resolve().isOrchestratedData()
 
+/**
+ * Checks if a declaration is of type [com.jeantuffier.statemachine.orchestrate.OrchestratedPage].
+ */
 fun KSPropertyDeclaration.isOrchestratedPage() = type.resolve().isOrchestratedPage()
 
+/**
+ * Checks if a declaration is not Unit.
+ */
 fun KSPropertyDeclaration.isNotUnit() = type.resolve().toClassName() != Unit::class.asClassName()
 
+/**
+ * Returns the "trigger" property value of a declaration annotated with
+ * [com.jeantuffier.statemachine.orchestrate.Orchestrated] as a [KSType].
+ */
 fun KSPropertyDeclaration.findTriggerType(): KSType? =
     findOrchestratedAnnotation()
         ?.findArgumentValueByName("trigger")
 
+
+/**
+ * Returns the "trigger" property value of a declaration annotated with
+ * [com.jeantuffier.statemachine.orchestrate.Orchestrated] as a [KSClassDeclaration].
+ */
 fun KSPropertyDeclaration.findTriggerDeclaration(): KSClassDeclaration? =
     findTriggerType()?.declaration?.closestClassDeclaration()
 
+/**
+ * Checks if a declaration is annotated with [com.jeantuffier.statemachine.orchestrate.Orchestrated], returns the
+ * annotation if present or null.
+ */
 fun KSPropertyDeclaration.findOrchestratedAnnotation(): KSAnnotation? =
     annotations.firstOrNull { it.annotationType.resolve().isOrchestrated() }
 
+/**
+ * Checks if a declaration is annotated with [com.jeantuffier.statemachine.orchestrate.Orchestrated].
+ */
 fun KSPropertyDeclaration.hasOrchestratedAnnotation(): Boolean =
     annotations.any { it.annotationType.resolve().isOrchestrated() }
 
+/**
+ * Checks if a declaration is annotated with [com.jeantuffier.statemachine.orchestrate.Orchestrated], then search for
+ * the "loadingStrategy" property and returns its value.
+ */
 fun KSPropertyDeclaration.loadingStrategy(): LoadingStrategy {
     val name = findOrchestratedAnnotation()
         ?.findArgumentValueByName("loadingStrategy")
@@ -52,6 +85,9 @@ fun KSPropertyDeclaration.loadingStrategy(): LoadingStrategy {
     return LoadingStrategy.valueOf(name)
 }
 
+/**
+ * Returns the parameter to use in a reducer or state machine for a given declaration.
+ */
 fun KSPropertyDeclaration.generateOrchestratedParameter(error: ClassName): ParameterizedTypeName {
     val orchestration = findOrchestratedAnnotation()
     val trigger = orchestration?.findArgumentValueByName("trigger") ?: throw IllegalStateException()
@@ -66,11 +102,17 @@ fun KSPropertyDeclaration.generateOrchestratedParameter(error: ClassName): Param
     return orchestratorType.parameterizedBy(trigger.toClassName(), error, orchestrationType)
 }
 
+/**
+ * Returns the parameter to use in a reducer or state machine constructor for a given declaration.
+ */
 fun KSPropertyDeclaration.generateOrchestratedParameterSpec(error: ClassName): ParameterSpec {
     val orchestrator = generateOrchestratedParameter(error)
     return ParameterSpec.builder(simpleName.asString(), orchestrator)
         .build()
 }
 
+/**
+ * Returns the simple name value of a property with its first character in upper case.
+ */
 fun KSPropertyDeclaration.upperCaseSimpleName(): String =
     simpleName.asString().replaceFirstChar(Char::uppercaseChar)

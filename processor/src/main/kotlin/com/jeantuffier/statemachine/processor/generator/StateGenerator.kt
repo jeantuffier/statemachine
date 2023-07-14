@@ -1,7 +1,6 @@
 package com.jeantuffier.statemachine.processor.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
-import com.google.devtools.ksp.processing.KSPLogger
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.jeantuffier.statemachine.orchestrate.Event
@@ -23,8 +22,11 @@ import com.squareup.kotlinpoet.asTypeName
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 
+/**
+ * Generate the state class corresponding to a class/interface annotated with
+ * [com.jeantuffier.statemachine.orchestrate.Orchestration].
+ */
 class StateGenerator(
-    private val logger: KSPLogger,
     private val codeGenerator: CodeGenerator,
 ) {
     fun generateViewState(classDeclaration: KSClassDeclaration) {
@@ -48,6 +50,9 @@ class StateGenerator(
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
     }
 
+    /**
+     * Generate the constructor of the state class.
+     */
     private fun generateViewStateConstructor(properties: Sequence<KSPropertyDeclaration>): FunSpec {
         val specs = properties.map { generateOrchestratedConstructorParameter(it) }
         val parameterSpecs: MutableList<ParameterSpec> = mutableListOf()
@@ -58,6 +63,9 @@ class StateGenerator(
             .build()
     }
 
+    /**
+     * Generate the parameters to use in the constructor of the state class.
+     */
     private fun generateOrchestratedConstructorParameter(declaration: KSPropertyDeclaration): ParameterSpec {
         val propertyName = declaration.simpleName.asString()
         val builder = ParameterSpec.builder(propertyName, declaration.type.toTypeName())
@@ -72,6 +80,9 @@ class StateGenerator(
         return builder.build()
     }
 
+    /**
+     * Generate the event parameter to use in the constructor of the state class.
+     */
     private fun generateEventConstructorParameter(): ParameterSpec {
         val type = Event::class.asClassName().copy(nullable = true)
         return ParameterSpec.builder("event", type)
@@ -79,6 +90,9 @@ class StateGenerator(
             .build()
     }
 
+    /**
+     * Generate the properties to use in the state class.
+     */
     private fun generateViewStateProperties(properties: Sequence<KSPropertyDeclaration>): List<PropertySpec> {
         val specs = properties.map {
             val propertyName = it.simpleName.asString()
