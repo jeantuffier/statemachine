@@ -1,12 +1,9 @@
 pluginManagement {
-    val kotlinVersion: String by settings
-    val kspVersion: String by settings
     plugins {
-        id("com.google.devtools.ksp") version kspVersion apply false
-        id("com.rickclephas.kmp.nativecoroutines") version "1.0.0-ALPHA-18" apply false
-        id("com.diffplug.spotless") version "6.19.0" apply false
-        kotlin("multiplatform") version kotlinVersion apply false
-        kotlin("plugin.serialization") version kotlinVersion apply false
+        id("com.google.devtools.ksp") version "1.9.21-1.0.16" apply false
+        id("com.rickclephas.kmp.nativecoroutines") version "1.0.0-ALPHA-23" apply false
+        kotlin("multiplatform") version "1.9.21" apply false
+        kotlin("plugin.serialization") version "1.9.21" apply false
     }
     repositories {
         google()

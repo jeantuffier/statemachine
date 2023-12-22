@@ -1,14 +1,7 @@
-val arrowVersion: String by project
-val kotlinxCoroutineVersion: String by project
-val turbineVersion: String by project
-
 plugins {
-    kotlin("multiplatform")
-    id("com.google.devtools.ksp")
+    alias(libs.plugins.multiplatform)
+    alias(libs.plugins.ksp)
 }
-
-group = "com.jeantuffier"
-version = "0.2.0"
 
 repositories {
     google()
@@ -16,16 +9,15 @@ repositories {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
+
     jvm()
 
-    ios {
-        binaries {
-            framework {
-                baseName = "StateMachine"
-            }
+    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach {
+        it.binaries.framework {
+            baseName = "StateMachine"
         }
     }
-    iosSimulatorArm64()
 
     js(IR) {
         browser()
@@ -37,41 +29,27 @@ kotlin {
             dependencies {
                 implementation(project(":orchestrate"))
                 implementation(project(":core"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
-                implementation("io.arrow-kt:arrow-core:$arrowVersion")
+                implementation(libs.arrow)
+                implementation(libs.coroutines.core)
             }
             kotlin.srcDir("build/generated/ksp/metadata/commonMain/kotlin/")
         }
-        val commonTest by getting {
-            dependencies {
-                implementation(project(":core"))
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-                implementation("app.cash.turbine:turbine:$turbineVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutineVersion")
-            }
+
+        commonTest.dependencies {
+            implementation(project(":core"))
+            implementation(libs.coroutines.core)
+            implementation(libs.coroutines.test)
+            implementation(libs.kotlin.test.common)
+            implementation(libs.kotlin.test.annotation)
+            implementation(libs.turbine)
         }
 
-        val iosMain by getting
-        val iosTest by getting {
-            dependsOn(commonTest)
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test.junit)
         }
 
-        val jvmMain by getting
-        val jvmTest by getting {
-            dependencies {
-                implementation(kotlin("test-junit"))
-                implementation("junit:junit:4.13.2")
-            }
-        }
-
-        val jsMain by getting
-        val jsTest by getting {
-            dependencies {
-                implementation(kotlin("test-junit"))
-                implementation("junit:junit:4.13.2")
-            }
+        jsTest.dependencies {
+            implementation(libs.kotlin.test.js)
         }
     }
 }
