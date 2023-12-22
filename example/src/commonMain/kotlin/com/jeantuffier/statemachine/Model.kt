@@ -5,5 +5,5 @@ data class Actor(val id: String, val name: String)
 data class Comment(val id: String, val content: String)
 
 sealed class AppError : Throwable() {
-    object SomeRandomError : AppError()
+    data object SomeRandomError : AppError()
 }

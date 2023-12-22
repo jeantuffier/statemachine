@@ -5,10 +5,10 @@ import arrow.core.Either
 import com.jeantuffier.statemachine.Actor
 import com.jeantuffier.statemachine.AppError
 import com.jeantuffier.statemachine.Comment
-import com.jeantuffier.statemachine.LoadComments
-import com.jeantuffier.statemachine.LoadData
+import com.jeantuffier.statemachine.ShowCommentsButtonTapped
 import com.jeantuffier.statemachine.Movie
-import com.jeantuffier.statemachine.SaveAsFavorite
+import com.jeantuffier.statemachine.OnScreenReady
+import com.jeantuffier.statemachine.SaveAsFavoriteIconTapped
 import com.jeantuffier.statemachine.core.StateUpdate
 import com.jeantuffier.statemachine.events.CouldNotLoadActors
 import com.jeantuffier.statemachine.events.CouldNotLoadComments
@@ -267,7 +267,7 @@ class MovieScreenTest {
             assertEquals(OrchestratedPage(), item.actors)
             assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.SaveAsFavorite("1"))
+            defaultStateMachine.reduce(MovieScreenAction.SaveAsFavoriteIconTapped("1"))
 
             item = awaitItem()
             assertTrue(item.isFavorite)
@@ -280,7 +280,7 @@ class MovieScreenTest {
     }
 
     private fun defaultStateMachine(
-        movie: OrchestratedUpdate<LoadData, AppError, Movie> = OrchestratedUpdate {
+        movie: OrchestratedUpdate<OnScreenReady, AppError, Movie> = OrchestratedUpdate {
             Either.Right(
                 Movie(
                     "1",
@@ -288,7 +288,7 @@ class MovieScreenTest {
                 ),
             )
         },
-        actors: OrchestratedUpdate<LoadData, AppError, Page<Actor>> = OrchestratedUpdate {
+        actors: OrchestratedUpdate<OnScreenReady, AppError, Page<Actor>> = OrchestratedUpdate {
             Either.Right(
                 Page(
                     available = Available(3),
@@ -300,7 +300,7 @@ class MovieScreenTest {
                 ),
             )
         },
-        comments: OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> = OrchestratedFlowUpdate {
+        comments: OrchestratedFlowUpdate<ShowCommentsButtonTapped, AppError, Page<Comment>> = OrchestratedFlowUpdate {
             flowOf(
                 Either.Right(
                     Page(
@@ -314,7 +314,7 @@ class MovieScreenTest {
                 ),
             )
         },
-        saveAsFavorite: OrchestratedAction<SaveAsFavorite, MovieScreenState> = OrchestratedAction {
+        saveAsFavoriteIconTapped: OrchestratedAction<SaveAsFavoriteIconTapped, MovieScreenState> = OrchestratedAction {
             flowOf(StateUpdate { it.copy(isFavorite = true) })
         },
         coroutineDispatcher: CoroutineDispatcher,
@@ -322,7 +322,7 @@ class MovieScreenTest {
         movie,
         actors,
         comments,
-        saveAsFavorite,
+        saveAsFavoriteIconTapped,
         MovieScreenState(isFavorite = false),
         coroutineDispatcher,
     )

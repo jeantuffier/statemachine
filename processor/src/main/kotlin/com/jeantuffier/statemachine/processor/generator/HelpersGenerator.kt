@@ -7,7 +7,7 @@ import com.jeantuffier.statemachine.core.StateUpdate
 import com.jeantuffier.statemachine.orchestrate.LoadingStrategy
 import com.jeantuffier.statemachine.processor.generator.extension.findArgumentValueByName
 import com.jeantuffier.statemachine.processor.generator.extension.findOrchestrationAnnotation
-import com.jeantuffier.statemachine.processor.generator.extension.findTriggerType
+import com.jeantuffier.statemachine.processor.generator.extension.findActionType
 import com.jeantuffier.statemachine.processor.generator.extension.generateOrchestratedParameter
 import com.jeantuffier.statemachine.processor.generator.extension.isOrchestratedData
 import com.jeantuffier.statemachine.processor.generator.extension.isOrchestratedPage
@@ -91,14 +91,14 @@ private fun loadFunction(
     errorClass: ClassName,
 ): FunSpec {
     val name = orchestratedProperty.simpleName.asString()
-    val trigger = orchestratedProperty.findTriggerType() ?: throw IllegalStateException()
+    val action = orchestratedProperty.findActionType() ?: throw IllegalStateException()
     val orchestrator = orchestratedProperty.generateOrchestratedParameter(errorClass)
     val state = StateUpdate::class.asClassName().parameterizedBy(viewStateClass)
     val returnType = Flow::class.asTypeName().parameterizedBy(state)
 
     return FunSpec.builder("load$baseName${name.replaceFirstChar(Char::uppercase)}")
         .addModifiers(KModifier.SUSPEND, KModifier.INTERNAL)
-        .addParameter(ParameterSpec.builder("input", trigger.toTypeName()).build())
+        .addParameter(ParameterSpec.builder("input", action.toTypeName()).build())
         .addParameter(ParameterSpec.builder("orchestrator", orchestrator).build())
         .returns(returnType)
         .addCode(

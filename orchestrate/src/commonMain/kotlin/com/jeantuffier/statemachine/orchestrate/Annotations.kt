@@ -38,14 +38,14 @@ enum class LoadingStrategy { SUSPEND, FLOW }
 
 /**
  * Annotate a property with [Orchestrated] when it should be used in the generated state class.
- * @param trigger Is the class used by the generated [com.jeantuffier.statemachine.core.Reducer] as the input for
+ * @param action Is the class used by the generated [com.jeantuffier.statemachine.core.Reducer] as the input for
  * loading the data and update the annotated property. That class has to be annotated with [Action]
  * @param loadingStrategy The strategy to use to load the data associated with the property.
  */
 @Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.SOURCE)
 annotation class Orchestrated(
-    val trigger: KClass<*>,
+    val action: KClass<*>,
     val loadingStrategy: LoadingStrategy,
 )
 

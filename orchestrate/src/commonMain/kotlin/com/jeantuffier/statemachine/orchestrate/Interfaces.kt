@@ -10,7 +10,7 @@ interface Event
  * [com.jeantuffier.statemachine.orchestrate.OrchestratedPage]. It guarentees the action class has the offset and limit
  * properties.
  */
-interface PageLoader {
+interface Pagination {
     val offset: Offset
     val limit: Limit
 }

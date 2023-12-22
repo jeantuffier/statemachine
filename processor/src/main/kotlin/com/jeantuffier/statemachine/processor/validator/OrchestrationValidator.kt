@@ -7,7 +7,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.validate
 import com.jeantuffier.statemachine.orchestrate.Orchestration
-import com.jeantuffier.statemachine.orchestrate.PageLoader
+import com.jeantuffier.statemachine.orchestrate.Pagination
 import com.jeantuffier.statemachine.processor.generator.extension.findArgumentValueByName
 import com.jeantuffier.statemachine.processor.generator.extension.findOrchestratedAnnotation
 import com.jeantuffier.statemachine.processor.generator.extension.isAction
@@ -62,10 +62,10 @@ class OrchestrationValidator {
 
     /**
      * Checks the following for each class/interface annotated with [com.jeantuffier.statemachine.orchestrate.Orchestration]
-     * - Each property annotated with [com.jeantuffier.statemachine.orchestrate.Orchestrated] must have a trigger class.
-     * - A trigger class can only be annotated with [com.jeantuffier.statemachine.orchestrate.Action], nothing else.
-     * - The trigger action for a property of type [com.jeantuffier.statemachine.orchestrate.OrchestratedPage] must
-     * implements [com.jeantuffier.statemachine.orchestrate.PageLoader].
+     * - Each property annotated with [com.jeantuffier.statemachine.orchestrate.Orchestrated] must have an action class.
+     * - An action class can only be annotated with [com.jeantuffier.statemachine.orchestrate.Action], nothing else.
+     * - The action for a property of type [com.jeantuffier.statemachine.orchestrate.OrchestratedPage] must
+     * implements [com.jeantuffier.statemachine.orchestrate.Pagination].
      */
     private fun validateOrchestrationProperty(
         property: KSPropertyDeclaration,
@@ -75,33 +75,33 @@ class OrchestrationValidator {
         if (propertyAnnotations.isEmpty()) return true
 
         val orchestratedAnnotation = property.findOrchestratedAnnotation() ?: return true
-        val triggerType = orchestratedAnnotation.findArgumentValueByName("trigger")
+        val actionType = orchestratedAnnotation.findArgumentValueByName("action")
             ?.declaration
             ?.closestClassDeclaration()
-        if (triggerType == null) {
-            logger.error("Trigger for $property cannot be null.")
+        if (actionType == null) {
+            logger.error("Action for $property cannot be null.")
             return false
         }
 
-        val triggerAnnotations = triggerType.annotations.toList()
-        if (triggerAnnotations.size != 1) {
-            logger.error("Trigger classes have to be annotated with exactly one @Action.")
+        val actionAnnotations = actionType.annotations.toList()
+        if (actionAnnotations.size != 1) {
+            logger.error("Action classes have to be annotated with exactly one @Action.")
             return false
         }
 
-        if (!triggerAnnotations.first().isAction()) {
-            logger.error("Trigger classes can only be annotated with one @Action. ($property)")
+        if (!actionAnnotations.first().isAction()) {
+            logger.error("Action classes can only be annotated with one @Action. ($property)")
             return false
         }
 
         val isOrchestratedPage = property.type.resolve().isOrchestratedPage()
-        val implementsPageLoader = triggerType
+        val implementsPagination = actionType
             .superTypes
             .mapNotNull { it.resolve().declaration.closestClassDeclaration()?.toClassName() }
-            .contains(PageLoader::class.asClassName())
+            .contains(Pagination::class.asClassName())
 
-        if (isOrchestratedPage && !implementsPageLoader) {
-            logger.error("The trigger $triggerType class for $property has to implement PageLoader.")
+        if (isOrchestratedPage && !implementsPagination) {
+            logger.error("The action $actionType class for $property has to implement PageLoader.")
             return false
         }
 

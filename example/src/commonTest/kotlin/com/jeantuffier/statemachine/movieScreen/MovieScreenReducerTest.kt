@@ -5,10 +5,10 @@ import arrow.core.Either
 import com.jeantuffier.statemachine.Actor
 import com.jeantuffier.statemachine.AppError
 import com.jeantuffier.statemachine.Comment
-import com.jeantuffier.statemachine.LoadComments
-import com.jeantuffier.statemachine.LoadData
+import com.jeantuffier.statemachine.ShowCommentsButtonTapped
 import com.jeantuffier.statemachine.Movie
-import com.jeantuffier.statemachine.SaveAsFavorite
+import com.jeantuffier.statemachine.OnScreenReady
+import com.jeantuffier.statemachine.SaveAsFavoriteIconTapped
 import com.jeantuffier.statemachine.core.StateUpdate
 import com.jeantuffier.statemachine.events.CouldNotLoadActors
 import com.jeantuffier.statemachine.events.CouldNotLoadComments
@@ -221,7 +221,7 @@ class MovieScreenReducerTest {
     @Test
     fun saveAsFavoriteShouldSucceed() = runTest {
         val reducer = createReducer()
-        val input = MovieScreenAction.SaveAsFavorite("1")
+        val input = MovieScreenAction.SaveAsFavoriteIconTapped("1")
         var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
@@ -232,7 +232,7 @@ class MovieScreenReducerTest {
     }
 
     private fun createReducer(
-        movie: OrchestratedUpdate<LoadData, AppError, Movie> = OrchestratedUpdate {
+        movie: OrchestratedUpdate<OnScreenReady, AppError, Movie> = OrchestratedUpdate {
             Either.Right(
                 Movie(
                     "1",
@@ -240,7 +240,7 @@ class MovieScreenReducerTest {
                 ),
             )
         },
-        actors: OrchestratedUpdate<LoadData, AppError, Page<Actor>> = OrchestratedUpdate {
+        actors: OrchestratedUpdate<OnScreenReady, AppError, Page<Actor>> = OrchestratedUpdate {
             Either.Right(
                 Page(
                     available = Available(3),
@@ -252,7 +252,7 @@ class MovieScreenReducerTest {
                 ),
             )
         },
-        comments: OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> = OrchestratedFlowUpdate {
+        comments: OrchestratedFlowUpdate<ShowCommentsButtonTapped, AppError, Page<Comment>> = OrchestratedFlowUpdate {
             flowOf(
                 Either.Right(
                     Page(
@@ -266,13 +266,13 @@ class MovieScreenReducerTest {
                 ),
             )
         },
-        saveAsFavorite: OrchestratedAction<SaveAsFavorite, MovieScreenState> = OrchestratedAction {
+        saveAsFavoriteIconTapped: OrchestratedAction<SaveAsFavoriteIconTapped, MovieScreenState> = OrchestratedAction {
             flowOf(StateUpdate { it.copy(isFavorite = true) })
         },
     ) = movieScreenReducer(
         movie,
         actors,
         comments,
-        saveAsFavorite,
+        saveAsFavoriteIconTapped,
     )
 }

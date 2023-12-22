@@ -91,19 +91,19 @@ interface MovieScreenOrchestration {
     val isFavorite: Boolean
 
     @Orchestrated(
-        trigger = LoadData::class,
+        action = LoadData::class,
         loadingStrategy = LoadingStrategy.SUSPEND,
     )
     val movie: OrchestratedData<Movie>
 
     @Orchestrated(
-        trigger = LoadData::class,
+        action = LoadData::class,
         loadingStrategy = LoadingStrategy.SUSPEND,
     )
     val actors: OrchestratedPage<Actor>
 
     @Orchestrated(
-        trigger = LoadComments::class,
+        action = LoadComments::class,
         loadingStrategy = LoadingStrategy.FLOW,
     )
     val comments: OrchestratedPage<Comment>

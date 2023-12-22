@@ -8,7 +8,7 @@ import com.jeantuffier.statemachine.processor.generator.extension.actionsParamet
 import com.jeantuffier.statemachine.processor.generator.extension.findActions
 import com.jeantuffier.statemachine.processor.generator.extension.findArgumentValueByName
 import com.jeantuffier.statemachine.processor.generator.extension.findOrchestrationAnnotation
-import com.jeantuffier.statemachine.processor.generator.extension.findTriggerDeclaration
+import com.jeantuffier.statemachine.processor.generator.extension.findActionDeclaration
 import com.jeantuffier.statemachine.processor.generator.extension.hasOrchestratedAnnotation
 import com.jeantuffier.statemachine.processor.generator.extension.lowerCaseSimpleName
 import com.jeantuffier.statemachine.processor.generator.extension.orchestratedParameters
@@ -76,7 +76,7 @@ class ReducerGenerator(
     ): List<String> {
         val contentStatements = classDeclaration.getAllProperties()
             .filter { it.hasOrchestratedAnnotation() }
-            .groupBy { it.findTriggerDeclaration()!!.toClassName() }
+            .groupBy { it.findActionDeclaration()!!.toClassName() }
             .map { orchestratedStatement(actionClass, baseName, it) }
         val actionStatements = classDeclaration.findActions().map {
             "is ${actionClass.simpleName}.${it.toClassName().simpleName} -> ${it.lowerCaseSimpleName()}(action)"
@@ -95,9 +95,9 @@ class ReducerGenerator(
         baseName: String,
         entry: Map.Entry<ClassName, List<KSPropertyDeclaration>>,
     ): String {
-        val (trigger, properties) = entry
+        val (action, properties) = entry
         return with(StringBuilder()) {
-            append("is ${actionClass.simpleName}.${trigger.simpleName} -> {")
+            append("is ${actionClass.simpleName}.${action.simpleName} -> {")
             if (properties.size > 1) {
                 append("merge(")
             }

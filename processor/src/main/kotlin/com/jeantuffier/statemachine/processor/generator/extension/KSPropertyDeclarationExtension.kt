@@ -46,20 +46,20 @@ fun KSPropertyDeclaration.isOrchestratedPage() = type.resolve().isOrchestratedPa
 fun KSPropertyDeclaration.isNotUnit() = type.resolve().toClassName() != Unit::class.asClassName()
 
 /**
- * Returns the "trigger" property value of a declaration annotated with
+ * Returns the "action" property value of a declaration annotated with
  * [com.jeantuffier.statemachine.orchestrate.Orchestrated] as a [KSType].
  */
-fun KSPropertyDeclaration.findTriggerType(): KSType? =
+fun KSPropertyDeclaration.findActionType(): KSType? =
     findOrchestratedAnnotation()
-        ?.findArgumentValueByName("trigger")
+        ?.findArgumentValueByName("action")
 
 
 /**
- * Returns the "trigger" property value of a declaration annotated with
+ * Returns the "action" property value of a declaration annotated with
  * [com.jeantuffier.statemachine.orchestrate.Orchestrated] as a [KSClassDeclaration].
  */
-fun KSPropertyDeclaration.findTriggerDeclaration(): KSClassDeclaration? =
-    findTriggerType()?.declaration?.closestClassDeclaration()
+fun KSPropertyDeclaration.findActionDeclaration(): KSClassDeclaration? =
+    findActionType()?.declaration?.closestClassDeclaration()
 
 /**
  * Checks if a declaration is annotated with [com.jeantuffier.statemachine.orchestrate.Orchestrated], returns the
@@ -90,7 +90,7 @@ fun KSPropertyDeclaration.loadingStrategy(): LoadingStrategy {
  */
 fun KSPropertyDeclaration.generateOrchestratedParameter(error: ClassName): ParameterizedTypeName {
     val orchestration = findOrchestratedAnnotation()
-    val trigger = orchestration?.findArgumentValueByName("trigger") ?: throw IllegalStateException()
+    val action = orchestration?.findArgumentValueByName("action") ?: throw IllegalStateException()
     val orchestratorType = when (loadingStrategy()) {
         LoadingStrategy.SUSPEND -> OrchestratedUpdate::class.asClassName()
         LoadingStrategy.FLOW -> OrchestratedFlowUpdate::class.asClassName()
@@ -99,7 +99,7 @@ fun KSPropertyDeclaration.generateOrchestratedParameter(error: ClassName): Param
 
     val orchestrationType = orchestrationType()
 
-    return orchestratorType.parameterizedBy(trigger.toClassName(), error, orchestrationType)
+    return orchestratorType.parameterizedBy(action.toClassName(), error, orchestrationType)
 }
 
 /**

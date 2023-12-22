@@ -6,7 +6,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSTypeParameter
 import com.jeantuffier.statemachine.processor.generator.extension.findActions
-import com.jeantuffier.statemachine.processor.generator.extension.findTriggerDeclaration
+import com.jeantuffier.statemachine.processor.generator.extension.findActionDeclaration
 import com.jeantuffier.statemachine.processor.generator.extension.hasActionAnnotation
 import com.jeantuffier.statemachine.processor.generator.extension.orchestrationBaseName
 import com.jeantuffier.statemachine.processor.generator.extension.packageName
@@ -68,7 +68,7 @@ class ActionsGenerator(
     private fun KSClassDeclaration.actionsToAdd(): Set<KSClassDeclaration> {
         val orchestrated = getAllProperties()
             .filter { it.annotations.toList().isNotEmpty() }
-            .mapNotNull { it.findTriggerDeclaration() }
+            .mapNotNull { it.findActionDeclaration() }
             .toSet()
         val actions = findActions()
             .mapNotNull { it.declaration.closestClassDeclaration() }

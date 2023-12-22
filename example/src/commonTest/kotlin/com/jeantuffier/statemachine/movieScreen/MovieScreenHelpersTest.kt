@@ -6,7 +6,7 @@ import arrow.core.right
 import com.jeantuffier.statemachine.Actor
 import com.jeantuffier.statemachine.AppError
 import com.jeantuffier.statemachine.Comment
-import com.jeantuffier.statemachine.LoadComments
+import com.jeantuffier.statemachine.ShowCommentsButtonTapped
 import com.jeantuffier.statemachine.LoadData
 import com.jeantuffier.statemachine.Movie
 import com.jeantuffier.statemachine.orchestrate.Available
@@ -147,7 +147,7 @@ class MovieScreenHelpersTest {
 
     @Test
     fun loadCommentsShouldSucceed() = runTest {
-        val input = object : LoadComments {
+        val input = object : ShowCommentsButtonTapped {
             override val id: String = "1"
             override val offset: Offset = Offset(0)
             override val limit: Limit = Limit(3)
@@ -173,7 +173,7 @@ class MovieScreenHelpersTest {
                 Comment("comment6", "comment6"),
             ),
         )
-        val orchestrator = OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> {
+        val orchestrator = OrchestratedFlowUpdate<ShowCommentsButtonTapped, AppError, Page<Comment>> {
             flow {
                 delay(100)
                 emit(page1.right())
@@ -206,13 +206,13 @@ class MovieScreenHelpersTest {
 
     @Test
     fun loadCommentsShouldFail() = runTest {
-        val input = object : LoadComments {
+        val input = object : ShowCommentsButtonTapped {
             override val id: String = "1"
             override val offset: Offset = Offset(0)
             override val limit: Limit = Limit(3)
         }
         var next = MovieScreenState(isFavorite = false)
-        val orchestrator = OrchestratedFlowUpdate<LoadComments, AppError, Page<Comment>> {
+        val orchestrator = OrchestratedFlowUpdate<ShowCommentsButtonTapped, AppError, Page<Comment>> {
             flowOf(Either.Left(AppError.SomeRandomError))
         }
         loadMovieScreenComments(input, orchestrator).test {

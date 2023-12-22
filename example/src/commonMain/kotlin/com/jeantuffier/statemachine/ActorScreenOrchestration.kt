@@ -9,23 +9,23 @@ import com.jeantuffier.statemachine.orchestrate.Orchestration
 @Orchestration(
     baseName = "ActorScreen",
     errorType = AppError::class,
-    actions = [SaveAsFavorite::class],
+    actions = [SaveAsFavoriteIconTapped::class],
 )
 interface ActorScreenOrchestration {
     @Orchestrated(
-        trigger = LoadData::class,
+        action = OnScreenReady::class,
         loadingStrategy = LoadingStrategy.SUSPEND,
     )
     val actor: OrchestratedData<Actor>
 
     @Orchestrated(
-        trigger = LoadData::class,
+        action = OnScreenReady::class,
         loadingStrategy = LoadingStrategy.SUSPEND,
     )
     val movies: OrchestratedPage<Movie>
 
     @Orchestrated(
-        trigger = LoadComments::class,
+        action = ShowCommentsButtonTapped::class,
         loadingStrategy = LoadingStrategy.FLOW,
     )
     val comments: OrchestratedPage<Comment>
