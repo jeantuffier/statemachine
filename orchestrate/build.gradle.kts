@@ -1,16 +1,8 @@
-val arrowVersion: String by project
-val kotlinxCoroutineVersion: String by project
-val kotlinxSerializationVersion: String by project
-val turbineVersion: String by project
-
 plugins {
-    kotlin("multiplatform")
-    kotlin("plugin.serialization")
+    alias(libs.plugins.multiplatform)
+    alias(libs.plugins.serialization)
     id("convention.publication")
 }
-
-group = "com.jeantuffier.statemachine"
-version = "0.2.0"
 
 repositories {
     google()
@@ -18,59 +10,42 @@ repositories {
 }
 
 kotlin {
+    applyDefaultHierarchyTemplate()
+
     jvm()
 
-    ios {
-        binaries {
-            framework {
-                baseName = "StateMachine"
-            }
+    listOf(iosX64(), iosArm64(), iosSimulatorArm64()).forEach {
+        it.binaries.framework {
+            baseName = "StateMachine"
         }
     }
-    iosSimulatorArm64()
 
     js(IR) {
         browser()
     }
 
     sourceSets {
-        val commonMain by getting {
-            dependencies {
-                implementation(project(":core"))
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
-                implementation("io.arrow-kt:arrow-core:$arrowVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:$kotlinxSerializationVersion")
-            }
-        }
-        val commonTest by getting {
-            dependencies {
-                implementation(kotlin("test-common"))
-                implementation(kotlin("test-annotations-common"))
-                implementation("app.cash.turbine:turbine:$turbineVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlinxCoroutineVersion")
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:$kotlinxCoroutineVersion")
-            }
+        commonMain.dependencies {
+            implementation(project(":core"))
+            implementation(libs.arrow)
+            implementation(libs.coroutines.core)
+            implementation(libs.serialization)
         }
 
-        val iosMain by getting
-        val iosTest by getting {
-            dependsOn(commonTest)
+        commonTest.dependencies {
+            implementation(libs.coroutines.core)
+            implementation(libs.coroutines.test)
+            implementation(libs.kotlin.test.common)
+            implementation(libs.kotlin.test.annotation)
+            implementation(libs.turbine)
         }
 
-        val jvmMain by getting
-        val jvmTest by getting {
-            dependencies {
-                implementation(kotlin("test-junit"))
-                implementation("junit:junit:4.13.2")
-            }
+        jvmTest.dependencies {
+            implementation(libs.kotlin.test.junit)
         }
 
-        val jsMain by getting
-        val jsTest by getting {
-            dependencies {
-                implementation(kotlin("test-junit"))
-                implementation("junit:junit:4.13.2")
-            }
+        jsTest.dependencies {
+            implementation(libs.kotlin.test.js)
         }
     }
 }
