@@ -58,7 +58,7 @@ class MovieScreenTest {
             assertEquals(OrchestratedPage(), item.actors)
             assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", Offset(0), Limit(10)))
+            defaultStateMachine.reduce(MovieScreenAction.OnScreenReady("1", Offset(0), Limit(10)))
 
             item = awaitItem()
             assertTrue(item.movie.isLoading)
@@ -111,7 +111,7 @@ class MovieScreenTest {
             assertEquals(OrchestratedPage(), item.actors)
             assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", Offset(0), Limit(10)))
+            defaultStateMachine.reduce(MovieScreenAction.OnScreenReady("1", Offset(0), Limit(10)))
 
             item = awaitItem()
             assertTrue(item.movie.isLoading)
@@ -159,7 +159,7 @@ class MovieScreenTest {
             assertEquals(OrchestratedPage(), item.actors)
             assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadData("1", Offset(0), Limit(10)))
+            defaultStateMachine.reduce(MovieScreenAction.OnScreenReady("1", Offset(0), Limit(10)))
 
             item = awaitItem()
             assertTrue(item.movie.isLoading)
@@ -203,7 +203,7 @@ class MovieScreenTest {
             assertEquals(OrchestratedPage(), item.actors)
             assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadComments("1", Offset(0), Limit(10)))
+            defaultStateMachine.reduce(MovieScreenAction.ShowCommentsButtonTapped("1", Offset(0), Limit(10)))
 
             item = awaitItem()
             assertTrue(item.comments.isLoading)
@@ -240,7 +240,7 @@ class MovieScreenTest {
             assertEquals(OrchestratedPage(), item.actors)
             assertEquals(OrchestratedPage(), item.comments)
 
-            defaultStateMachine.reduce(MovieScreenAction.LoadComments("1", Offset(0), Limit(10)))
+            defaultStateMachine.reduce(MovieScreenAction.ShowCommentsButtonTapped("1", Offset(0), Limit(10)))
 
             item = awaitItem()
             assertTrue(item.comments.isLoading)

@@ -7,8 +7,8 @@ import com.jeantuffier.statemachine.Actor
 import com.jeantuffier.statemachine.AppError
 import com.jeantuffier.statemachine.Comment
 import com.jeantuffier.statemachine.ShowCommentsButtonTapped
-import com.jeantuffier.statemachine.LoadData
 import com.jeantuffier.statemachine.Movie
+import com.jeantuffier.statemachine.OnScreenReady
 import com.jeantuffier.statemachine.orchestrate.Available
 import com.jeantuffier.statemachine.orchestrate.Limit
 import com.jeantuffier.statemachine.orchestrate.Offset
@@ -29,14 +29,14 @@ class MovieScreenHelpersTest {
 
     @Test
     fun loadMovieShouldSucceed() = runTest {
-        val input = object : LoadData {
+        val input = object : OnScreenReady {
             override val id: String = "1"
             override val offset: Offset = Offset(0)
             override val limit: Limit = Limit(10)
         }
         var next = MovieScreenState(isFavorite = false)
         val movie = Movie("movie1", "movie1")
-        val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
+        val orchestrator = OrchestratedUpdate<OnScreenReady, AppError, Movie> {
             Either.Right(movie)
         }
         loadMovieScreenMovie(input, orchestrator).test {
@@ -54,13 +54,13 @@ class MovieScreenHelpersTest {
 
     @Test
     fun loadMovieShouldFail() = runTest {
-        val input = object : LoadData {
+        val input = object : OnScreenReady {
             override val id: String = "1"
             override val offset: Offset = Offset(0)
             override val limit: Limit = Limit(10)
         }
         var next = MovieScreenState(isFavorite = false)
-        val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
+        val orchestrator = OrchestratedUpdate<OnScreenReady, AppError, Movie> {
             Either.Left(AppError.SomeRandomError)
         }
         loadMovieScreenMovie(input, orchestrator).test {
@@ -78,7 +78,7 @@ class MovieScreenHelpersTest {
 
     @Test
     fun loadActorsShouldSucceed() = runTest {
-        val input = object : LoadData {
+        val input = object : OnScreenReady {
             override val id: String = "1"
             override val offset: Offset = Offset(0)
             override val limit: Limit = Limit(10)
@@ -94,7 +94,7 @@ class MovieScreenHelpersTest {
                 Actor("actor3", "actor3"),
             ),
         )
-        val orchestrator = OrchestratedUpdate<LoadData, AppError, Page<Actor>> {
+        val orchestrator = OrchestratedUpdate<OnScreenReady, AppError, Page<Actor>> {
             Either.Right(actors)
         }
         loadMovieScreenActors(input, orchestrator).test {
@@ -123,13 +123,13 @@ class MovieScreenHelpersTest {
 
     @Test
     fun loadActorsShouldFail() = runTest {
-        val input = object : LoadData {
+        val input = object : OnScreenReady {
             override val id: String = "1"
             override val offset: Offset = Offset(0)
             override val limit: Limit = Limit(10)
         }
         var next = MovieScreenState(isFavorite = false)
-        val orchestrator = OrchestratedUpdate<LoadData, AppError, Movie> {
+        val orchestrator = OrchestratedUpdate<OnScreenReady, AppError, Movie> {
             Either.Left(AppError.SomeRandomError)
         }
         loadMovieScreenMovie(input, orchestrator).test {

@@ -55,3 +55,11 @@ annotation class Orchestrated(
 @Target(AnnotationTarget.CLASS)
 @Retention(AnnotationRetention.SOURCE)
 annotation class Action
+
+
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.SOURCE)
+annotation class UseCase(
+    val action: KClass<*>,
+    val useCase: KClass<*>,
+)

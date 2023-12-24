@@ -34,7 +34,7 @@ class MovieScreenReducerTest {
     @Test
     fun loadDataShouldSucceed() = runTest {
         val reducer = createReducer()
-        val input = MovieScreenAction.LoadData("1", Offset(0), Limit(10))
+        val input = MovieScreenAction.OnScreenReady("1", Offset(0), Limit(10))
         var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
@@ -80,7 +80,7 @@ class MovieScreenReducerTest {
         val reducer = createReducer(
             movie = { Either.Left(AppError.SomeRandomError) },
         )
-        val input = MovieScreenAction.LoadData("1", Offset(0), Limit(10))
+        val input = MovieScreenAction.OnScreenReady("1", Offset(0), Limit(10))
         var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
@@ -129,7 +129,7 @@ class MovieScreenReducerTest {
         val reducer = createReducer(
             actors = { Either.Left(AppError.SomeRandomError) },
         )
-        val input = MovieScreenAction.LoadData("1", Offset(0), Limit(10))
+        val input = MovieScreenAction.OnScreenReady("1", Offset(0), Limit(10))
         var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
@@ -167,7 +167,7 @@ class MovieScreenReducerTest {
     @Test
     fun loadCommentsShouldSucceed() = runTest {
         val reducer = createReducer()
-        val input = MovieScreenAction.LoadComments("1", Offset(0), Limit(3))
+        val input = MovieScreenAction.OnScreenReady("1", Offset(0), Limit(3))
         var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
@@ -198,7 +198,7 @@ class MovieScreenReducerTest {
         val reducer = createReducer(
             comments = { flowOf(Either.Left(AppError.SomeRandomError)) },
         )
-        val input = MovieScreenAction.LoadComments("1", Offset(0), Limit(3))
+        val input = MovieScreenAction.OnScreenReady("1", Offset(0), Limit(3))
         var state = MovieScreenState(isFavorite = false)
         reducer(input).test {
             state = awaitItem()(state)
