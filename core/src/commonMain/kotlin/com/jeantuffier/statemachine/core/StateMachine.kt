@@ -44,7 +44,7 @@ interface StateMachine<Input, Output> {
      * @param input The input to cancel.
      * @param rollback A [StateUpdate] to restore the state machine's state after cancellation.
      */
-    fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>)
+    fun <T : Input> cancel(input: T, rollback: Effect.StateUpdate<Output>)
 
     /**
      * Cancels the state machine job and its children.
@@ -97,7 +97,7 @@ fun <Input : Any, Output> StateMachine(
         }
     }
 
-    override fun <T : Input> cancel(input: T, rollback: StateUpdate<Output>) {
+    override fun <T : Input> cancel(input: T, rollback: Effect.StateUpdate<Output>) {
         jobRegistry[input.hashCode()]?.cancel()
         coroutineScope.launch {
             _state.update { rollback(state.value) }
@@ -114,18 +114,6 @@ fun <Input : Any, Output> StateMachine(
 }
 
 /**
- * The type returned by [Reducer] to represent how a state machine state should be updated.
- */
-fun interface StateUpdate<T> {
-
-    /**
-     * @param state: the current state hold by the state machine.
-     * @return an updated state value.
-     */
-    suspend operator fun invoke(state: T): T
-}
-
-/**
  * The function matching state machine's input and the logic to execute.
  */
 fun interface Reducer<Input, Output> {
@@ -136,5 +124,21 @@ fun interface Reducer<Input, Output> {
      * it is available. For that reason, a [Reducer] returns a flow of [StateUpdate].
      */
     @NativeCoroutines
-    suspend operator fun invoke(input: Input): Flow<StateUpdate<Output>>
+    suspend operator fun invoke(input: Input): Flow<Effect.StateUpdate<Output>>
+}
+
+sealed interface Effect {
+    /**
+     * The type returned by [Reducer] to represent how a state machine state should be updated.
+     */
+    fun interface StateUpdate<T>: Effect {
+
+        /**
+         * @param state: the current state hold by the state machine.
+         * @return an updated state value.
+         */
+        suspend operator fun invoke(state: T): T
+    }
+
+    data object None : Effect
 }

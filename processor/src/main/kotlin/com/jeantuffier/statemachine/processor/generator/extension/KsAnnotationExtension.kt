@@ -28,3 +28,18 @@ fun KSAnnotation.findArgumentValuesByName(name: String): List<KSType> =
  * Checks if an annotation is [com.jeantuffier.statemachine.orchestrate.Action]
  */
 fun KSAnnotation.isAction() = annotationType.resolve().isAction()
+
+/**
+ * Checks if an annotation is [com.jeantuffier.statemachine.orchestrate.Feature]
+ */
+fun KSAnnotation.isFeature() = annotationType.resolve().isFeature()
+
+/**
+ * Checks if an annotation is [com.jeantuffier.statemachine.orchestrate.UseCase]
+ */
+fun KSAnnotation.isUseCase() = annotationType.resolve().isUseCase()
+
+/**
+ * Checks if an annotation is [com.jeantuffier.statemachine.orchestrate.UseCase]
+ */
+fun KSAnnotation.isWith() = annotationType.resolve().isUseCase()

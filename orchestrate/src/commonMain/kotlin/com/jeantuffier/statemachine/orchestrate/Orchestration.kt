@@ -1,7 +1,7 @@
 package com.jeantuffier.statemachine.orchestrate
 
 import arrow.core.Either
-import com.jeantuffier.statemachine.core.StateUpdate
+import com.jeantuffier.statemachine.core.Effect.StateUpdate
 import kotlinx.coroutines.flow.Flow
 
 /**

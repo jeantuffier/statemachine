@@ -1,5 +1,7 @@
 package com.jeantuffier.statemachine.orchestrate
 
+import com.jeantuffier.statemachine.orchestrate.LoadingStrategy.FLOW
+import com.jeantuffier.statemachine.orchestrate.LoadingStrategy.SUSPEND
 import kotlin.reflect.KClass
 
 /**
@@ -49,6 +51,10 @@ annotation class Orchestrated(
     val loadingStrategy: LoadingStrategy,
 )
 
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.SOURCE)
+annotation class State
+
 /**
  * Tell ksp to use this class as input in when generating a [com.jeantuffier.statemachine.core.Reducer]
  */
@@ -56,10 +62,10 @@ annotation class Orchestrated(
 @Retention(AnnotationRetention.SOURCE)
 annotation class Action
 
-
-@Target(AnnotationTarget.PROPERTY)
+@Target(AnnotationTarget.FUNCTION)
 @Retention(AnnotationRetention.SOURCE)
-annotation class UseCase(
-    val action: KClass<*>,
-    val useCase: KClass<*>,
-)
+annotation class UseCase
+
+@Target(AnnotationTarget.CLASS)
+@Retention(AnnotationRetention.SOURCE)
+annotation class Feature(val implementationName: String = "")

@@ -63,3 +63,18 @@ fun KSClassDeclaration.actionsParameters(stateClassName: ClassName): List<Parame
             ParameterSpec.builder(it.lowerCaseSimpleName(), stateUpdate)
                 .build()
         } ?: emptyList()
+
+/**
+ * Returns the "implementationName" value of a [com.jeantuffier.statemachine.orchestrate.Feature] annotation.
+ */
+fun KSClassDeclaration.featureImplementationName() = annotations
+    .first { it.isFeature() }
+    .arguments
+    .first().value as String?
+
+/**
+ * Returns true if any of the functions declared in a [com.jeantuffier.statemachine.orchestrate.Feature] interface
+ * is annotated with [com.jeantuffier.statemachine.orchestrate.UseCase] and the use case function is marked with
+ * suspend.
+ */
+fun KSClassDeclaration.hasCancellableUseCases() = getAllFunctions().any { it.isSuspendableUseCase() }

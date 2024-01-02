@@ -1,6 +1,6 @@
 package com.jeantuffier.statemachine
 
-import com.jeantuffier.statemachine.orchestrate.Action
+/*import com.jeantuffier.statemachine.orchestrate.Action
 import com.jeantuffier.statemachine.orchestrate.Limit
 import com.jeantuffier.statemachine.orchestrate.Offset
 import com.jeantuffier.statemachine.orchestrate.Pagination
@@ -22,4 +22,4 @@ interface ShowCommentsButtonTapped : Pagination {
 @Action
 interface SaveAsFavoriteIconTapped {
     val id: String
-}
+}*/

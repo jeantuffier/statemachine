@@ -3,7 +3,7 @@ package com.jeantuffier.statemachine.processor.generator
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.jeantuffier.statemachine.core.StateUpdate
+import com.jeantuffier.statemachine.core.Effect.StateUpdate
 import com.jeantuffier.statemachine.orchestrate.LoadingStrategy
 import com.jeantuffier.statemachine.processor.generator.extension.findArgumentValueByName
 import com.jeantuffier.statemachine.processor.generator.extension.findOrchestrationAnnotation
@@ -91,7 +91,7 @@ private fun loadFunction(
     errorClass: ClassName,
 ): FunSpec {
     val name = orchestratedProperty.simpleName.asString()
-    val action = orchestratedProperty.findActionType() ?: throw IllegalStateException()
+    val action = orchestratedProperty.findActionType() ?: throw Exception("Could not find an action for $orchestratedProperty")
     val orchestrator = orchestratedProperty.generateOrchestratedParameter(errorClass)
     val state = StateUpdate::class.asClassName().parameterizedBy(viewStateClass)
     val returnType = Flow::class.asTypeName().parameterizedBy(state)
