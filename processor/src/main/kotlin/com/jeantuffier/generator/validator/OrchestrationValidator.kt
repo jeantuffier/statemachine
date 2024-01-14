@@ -1,3 +1,4 @@
+/*
 package com.jeantuffier.generator.validator
 
 import com.google.devtools.ksp.closestClassDeclaration
@@ -24,10 +25,12 @@ class OrchestrationValidator {
             symbol.validateProperties(logger)
     }
 
-    /**
+    */
+/**
      * Checks that the baseName property value of [com.jeantuffier.statemachine.orchestrate.Orchestration] is not
      * empty.
-     */
+     *//*
+
     private fun KSClassDeclaration.validateClassNames(logger: KSPLogger): Boolean {
         val arguments = annotations
             .first { it.shortName.asString() == Orchestration::class.asClassName().simpleName }
@@ -43,10 +46,12 @@ class OrchestrationValidator {
         return true
     }
 
-    /**
+    */
+/**
      * Checks that a class/interface annotated with [com.jeantuffier.statemachine.orchestrate.Orchestration] contains
      * at least one property annotated with [com.jeantuffier.statemachine.orchestrate.Orchestrated].
-     */
+     *//*
+
     private fun KSClassDeclaration.validateProperties(logger: KSPLogger): Boolean {
         val properties = getAllProperties()
         if (properties.toList().isEmpty()) {
@@ -60,13 +65,15 @@ class OrchestrationValidator {
         return true
     }
 
-    /**
+    */
+/**
      * Checks the following for each class/interface annotated with [com.jeantuffier.statemachine.orchestrate.Orchestration]
      * - Each property annotated with [com.jeantuffier.statemachine.orchestrate.Orchestrated] must have an action class.
      * - An action class can only be annotated with [com.jeantuffier.statemachine.orchestrate.Action], nothing else.
      * - The action for a property of type [com.jeantuffier.statemachine.orchestrate.OrchestratedPage] must
      * implements [com.jeantuffier.statemachine.orchestrate.Pagination].
-     */
+     *//*
+
     private fun validateOrchestrationProperty(
         property: KSPropertyDeclaration,
         logger: KSPLogger,
@@ -108,3 +115,4 @@ class OrchestrationValidator {
         return true
     }
 }
+*/

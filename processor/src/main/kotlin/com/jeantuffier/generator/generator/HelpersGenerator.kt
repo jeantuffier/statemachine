@@ -1,3 +1,4 @@
+/*
 package com.jeantuffier.generator.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
@@ -31,10 +32,12 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 import kotlinx.coroutines.flow.Flow
 
+*/
 /**
  * Generate helper functions used by reducers to load data into properties annotated with
  * [com.jeantuffier.statemachine.orchestrate.Orchestrated].
- */
+ *//*
+
 class HelpersGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
@@ -81,9 +84,11 @@ class HelpersGenerator(
 }
 
 
+*/
 /**
  * Generate a function containing logic to load data.
- */
+ *//*
+
 private fun loadFunction(
     orchestratedProperty: KSPropertyDeclaration,
     baseName: String,
@@ -115,9 +120,11 @@ private fun loadFunction(
         .build()
 }
 
+*/
 /**
  * Returns the code block handling [com.jeantuffier.statemachine.orchestrate.OrchestratedUpdate].
- */
+ *//*
+
 private fun orchestratedUpdateCodeBlock(
     name: String,
     orchestratedProperty: KSPropertyDeclaration,
@@ -131,9 +138,11 @@ private fun orchestratedUpdateCodeBlock(
     |}
 """.trimMargin()
 
+*/
 /**
  * Returns the code block handling [com.jeantuffier.statemachine.orchestrate.OrchestratedFlowUpdate].
- */
+ *//*
+
 private fun orchestratedFlowUpdateCodeBlock(
     name: String,
     errorClassName: ClassName,
@@ -155,9 +164,11 @@ private fun orchestratedFlowUpdateCodeBlock(
     |   }
 """.trimMargin()
 
+*/
 /**
  * Returns the code block handling a left result.
- */
+ *//*
+
 private fun onDataLeft(startFunction: String, name: String): String =
     """
         |$startFunction {
@@ -168,9 +179,11 @@ private fun onDataLeft(startFunction: String, name: String): String =
         |}
     """.trimMargin()
 
+*/
 /**
  * Returns the code block handling a right result.
- */
+ *//*
+
 private fun onDataRight(startFunction: String, property: KSPropertyDeclaration): String =
     when {
         property.isOrchestratedData() -> {
@@ -205,3 +218,4 @@ private fun onDataRight(startFunction: String, property: KSPropertyDeclaration):
 
         else -> throw IllegalStateException()
     }
+*/

@@ -1,6 +1,10 @@
 package com.jeantuffier.generator.generator.extension
 
+import com.google.devtools.ksp.getFunctionDeclarationsByName
+import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.google.devtools.ksp.symbol.KSType
 import com.jeantuffier.statemachine.orchestrate.OrchestratedAction
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterSpec
@@ -72,9 +76,36 @@ fun KSClassDeclaration.featureImplementationName() = annotations
     .arguments
     .first().value as String?
 
+fun KSFunctionDeclaration.stateUpdaterId(): String? {
+    val withAnnotation = annotations
+        .firstOrNull { it.isWith() } ?: return null
+    val stateUpdaterId = withAnnotation.arguments.first().value as KSType
+    return stateUpdaterId.lowerCaseSimpleName()
+}
+
+fun KSFunctionDeclaration.isAssociatedWithSuspendingStateUpdater(resolver: Resolver, packageName: String): Boolean {
+    val stateUpdaterId = stateUpdaterId() ?: return false
+    val stateUpdaterFunctions = resolver
+        .getFunctionDeclarationsByName("$packageName.$stateUpdaterId", true)
+        .toList()
+    if (stateUpdaterFunctions.isEmpty()) return false
+    return stateUpdaterFunctions.first().isSuspending()
+}
+
+fun KSFunctionDeclaration.flowStateUpdater(resolver: Resolver, packageName: String): Boolean {
+    val stateUpdaterId = stateUpdaterId() ?: return false
+    val stateUpdaterFunctions = resolver
+        .getFunctionDeclarationsByName("$packageName.$stateUpdaterId", true)
+        .toList()
+    if (stateUpdaterFunctions.isEmpty()) return false
+    return stateUpdaterFunctions.first().returnsFlow()
+}
+
 /**
  * Returns true if any of the functions declared in a [com.jeantuffier.statemachine.orchestrate.Feature] interface
- * is annotated with [com.jeantuffier.statemachine.orchestrate.UseCase] and the use case function is marked with
+ * is annotated with [com.jeantuffier.statemachine.orchestrate.StateUpdater] and the use case function is marked with
  * suspend.
  */
-fun KSClassDeclaration.hasCancellableUseCases() = getAllFunctions().any { it.isSuspendableUseCase() }
+fun KSClassDeclaration.hasSuspendableStateUpdater(resolver: Resolver, packageName: String) =
+    getAllFunctions().toList()
+        .any { it.isAssociatedWithSuspendingStateUpdater(resolver, packageName) }

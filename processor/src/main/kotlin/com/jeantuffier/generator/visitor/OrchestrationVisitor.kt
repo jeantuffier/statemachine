@@ -1,3 +1,4 @@
+/*
 package com.jeantuffier.generator.visitor
 
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
@@ -31,3 +32,4 @@ class OrchestrationVisitor(environment: SymbolProcessorEnvironment) : KSVisitorV
         stateMachineGenerator.generateStateMachine((classDeclaration))
     }
 }
+*/

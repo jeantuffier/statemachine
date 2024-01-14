@@ -1,3 +1,4 @@
+/*
 package com.jeantuffier.generator.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
@@ -21,10 +22,12 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import kotlinx.coroutines.CoroutineDispatcher
 
+*/
 /**
  * Generate a function returning an instance of [com.jeantuffier.statemachine.core.StateMachine] for a given class or
  * interface annotated with [com.jeantuffier.statemachine.orchestrate.Orchestration].
- */
+ *//*
+
 class StateMachineGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
@@ -72,9 +75,11 @@ class StateMachineGenerator(
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
     }
 
-    /**
+    */
+/**
      * Generate the list of reducer's parameters to use in the state machine.
-     */
+     *//*
+
     private fun stateMachineReducerParameter(classDeclaration: KSClassDeclaration): List<String> {
         val orchestratedProperties = classDeclaration.getAllProperties()
             .filter { it.hasOrchestratedAnnotation() }
@@ -87,3 +92,4 @@ class StateMachineGenerator(
         }
     }
 }
+*/

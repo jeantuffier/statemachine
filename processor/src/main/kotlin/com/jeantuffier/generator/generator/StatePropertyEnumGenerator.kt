@@ -1,8 +1,10 @@
+/*
 package com.jeantuffier.generator.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.jeantuffier.statemachine.processor.generator.extension.upperCaseSimpleName
+import com.jeantuffier.generator.GeneratorProcessor.Companion.PACKAGE_NAME
+import com.jeantuffier.generator.generator.extension.upperCaseSimpleName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -15,11 +17,10 @@ class StatePropertyEnumGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
     fun generateStatePropertyEnums(classDeclaration: KSClassDeclaration) {
-        val packageName = classDeclaration.packageName.asString()
         val fileName = classDeclaration.toClassName().simpleName + "Property"
 
         val fileSpec = FileSpec.builder(
-            packageName = packageName,
+            packageName = PACKAGE_NAME,
             fileName = fileName,
         ).apply {
             val enum = TypeSpec.enumBuilder(fileName)
@@ -42,4 +43,4 @@ class StatePropertyEnumGenerator(
         }.build()
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
     }
-}
+}*/

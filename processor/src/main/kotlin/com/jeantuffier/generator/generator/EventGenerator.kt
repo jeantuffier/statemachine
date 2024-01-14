@@ -1,3 +1,4 @@
+/*
 package com.jeantuffier.generator.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
@@ -13,10 +14,12 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.ksp.writeTo
 
+*/
 /**
  * Generate the events representing the failure of functions loading data in properties annotated with
  * [com.jeantuffier.statemachine.orchestrate.Orchestrated].
- */
+ *//*
+
 class EventGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
@@ -57,3 +60,4 @@ class EventGenerator(
             }
     }
 }
+*/

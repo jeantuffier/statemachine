@@ -1,9 +1,10 @@
+/*
 package com.jeantuffier.generator.visitor
 
 import com.google.devtools.ksp.processing.CodeGenerator
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSVisitorVoid
-import com.jeantuffier.statemachine.processor.generator.StatePropertyEnumGenerator
+import com.jeantuffier.generator.generator.StatePropertyEnumGenerator
 
 class StatePropertyEnumVisitor(codeGenerator: CodeGenerator) : KSVisitorVoid() {
 
@@ -16,3 +17,4 @@ class StatePropertyEnumVisitor(codeGenerator: CodeGenerator) : KSVisitorVoid() {
         statePropertyEnumGenerator.generateStatePropertyEnums(classDeclaration)
     }
 }
+*/

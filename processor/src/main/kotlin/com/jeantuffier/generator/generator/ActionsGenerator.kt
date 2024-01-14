@@ -1,3 +1,4 @@
+/*
 package com.jeantuffier.generator.generator
 
 import com.google.devtools.ksp.closestClassDeclaration
@@ -23,13 +24,15 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.squareup.kotlinpoet.ksp.writeTo
 
+*/
 /**
  * Generates the sealed class containing actions for a [com.jeantuffier.statemachine.orchestrate.Orchestration]
  * annotation.
  *
  * To make KotlinPoet create data classes for each action, we need to build classes with matching constructor
  * parameters and class properties. [addSealedElement], [constructor] and [properties] are in charge of that.
- */
+ *//*
+
 class ActionsGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
@@ -62,9 +65,11 @@ class ActionsGenerator(
         fileSpec.writeTo(codeGenerator = codeGenerator, aggregating = false)
     }
 
-    /**
+    */
+/**
      * Create a set of actions to add to the sealed class.
-     */
+     *//*
+
     private fun KSClassDeclaration.actionsToAdd(): Set<KSClassDeclaration> {
         val orchestrated = getAllProperties()
             .filter { it.annotations.toList().isNotEmpty() }
@@ -76,9 +81,11 @@ class ActionsGenerator(
         return orchestrated + actions
     }
 
-    /**
+    */
+/**
      * Create a [TypeSpec] instance representing the actions to add in the sealed class.
-     */
+     *//*
+
     private fun addSealedElement(
         classDeclaration: KSClassDeclaration,
         superType: TypeName,
@@ -106,9 +113,11 @@ class ActionsGenerator(
         return builder.build()
     }
 
-    /**
+    */
+/**
      * Create a [FunSpec] instance representing the constructor for an action.
-     */
+     *//*
+
     private fun constructor(constructorParameters: List<KSPropertyDeclaration>) =
         FunSpec.constructorBuilder().apply {
             constructorParameters.forEach { constructorParameter ->
@@ -125,9 +134,11 @@ class ActionsGenerator(
             }
         }.build()
 
-    /**
+    */
+/**
      * Create a list of [PropertySpec] for an action in the sealed class.
-     */
+     *//*
+
     private fun properties(
         constructorParameters: List<KSPropertyDeclaration>,
         isAction: Boolean,
@@ -148,3 +159,4 @@ class ActionsGenerator(
                 .build()
         }
 }
+*/

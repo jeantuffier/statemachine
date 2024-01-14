@@ -1,6 +1,7 @@
 package com.jeantuffier.generator.generator
 
 import com.google.devtools.ksp.processing.CodeGenerator
+import com.jeantuffier.generator.GeneratorProcessor.Companion.PACKAGE_NAME
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -9,32 +10,24 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.ksp.writeTo
 
-class UseCaseGenerator(
+class StateUpdateGenerator(
     private val codeGenerator: CodeGenerator,
 ) {
-    fun generate(
-        packageName: String,
-        useCases: Set<String>,
-        cancellable: Set<String>,
-    ) {
-        val fileName = "UseCases"
-
+    fun generate(ids: Set<String>) {
         val fileSpec = FileSpec.builder(
-            packageName = packageName,
-            fileName = fileName,
+            packageName = PACKAGE_NAME,
+            fileName = "StateUpdate",
         ).apply {
-            val useCaseEnum = TypeSpec.enumBuilder(fileName)
-            useCases.forEach { useCaseEnum.addEnumConstant(it) }
-            addType(useCaseEnum.build())
+            val stateUpdaterIdEnum = TypeSpec.enumBuilder("StateUpdaterID")
+            ids.forEach {
+                stateUpdaterIdEnum.addEnumConstant(it.replaceFirstChar(Char::uppercaseChar))
+            }
+            addType(stateUpdaterIdEnum.build())
 
-            val cancellableEnum = TypeSpec.enumBuilder("CancelID")
-            cancellable.forEach { cancellableEnum.addEnumConstant(it) }
-            addType(cancellableEnum.build())
-
-            val cancellableInterface = TypeSpec.interfaceBuilder("CancellableUseCase")
+            val cancellableInterface = TypeSpec.interfaceBuilder("CancellableStateUpdater")
                 .addFunction(
                     FunSpec.builder("cancel")
-                        .addParameter("id", ClassName(packageName, "CancelID"))
+                        .addParameter("id", ClassName(packageName, "StateUpdaterID"))
                         .addModifiers(KModifier.ABSTRACT)
                         .build()
                 )
@@ -44,12 +37,12 @@ class UseCaseGenerator(
             val annotation = TypeSpec.annotationBuilder("With")
                 .primaryConstructor(
                     FunSpec.constructorBuilder()
-                        .addParameter("useCase", ClassName(packageName, fileName))
+                        .addParameter("stateUpdater", ClassName(packageName, "StateUpdaterID"))
                         .build()
                 )
                 .addProperty(
-                    PropertySpec.builder("useCase", ClassName(packageName, fileName))
-                        .initializer("useCase")
+                    PropertySpec.builder("stateUpdater", ClassName(packageName, "StateUpdaterID"))
+                        .initializer("stateUpdater")
                         .build()
                 )
             addType(annotation.build())
